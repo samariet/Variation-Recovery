@@ -1,10 +1,10 @@
-
-# updateR()
-# Instead of updating packageess, reinstall.
- source("http://bioconductor.org/biocLite.R")
- biocLite()  
 # 
- update.packages(ask = FALSE, dependencies = c('Suggests'))
+# # updateR()
+# # Instead of updating packageess, reinstall.
+#  source("http://bioconductor.org/biocLite.R")
+#  biocLite()  
+# # 
+#  update.packages(ask = FALSE, dependencies = c('Suggests'))
 
 ##Load libraries
 library(lumi)
@@ -20,6 +20,7 @@ library(cluster)
 library(sva)
 library(qpcR)
 library(limma)
+library(ClassDiscovery)
 
 ############################################################################################
 #Input Data and low level analysis: probe filtering, normalization.
@@ -132,8 +133,6 @@ data.lumi.clean = data.lumi[data.lumi@featureData[[5]] %in% probes, ] #featureDa
 # Convert raw Illumina probe intensities to expression values (Both iPSCs and LCLs, no hearts)
 # Corrects background, log2 stabiliizes variance, and quantile normalize
 data.norm.all <- lumiExpresso(data.lumi.clean, bg.correct=TRUE, bgcorrect.param=list(method='forcePositive'), variance.stabilize=TRUE, varianceStabilize.param = list(method="log2"), normalize=TRUE, normalize.param=list(method="quantile"), QC.evaluation=TRUE, QC.param=list(), verbose=TRUE)
-
-#With this threshold 28,663 probes out of 47,315 are expressed
 expr_quant.all <- data.norm.all@assayData$exprs
 dim(expr_quant.all)
 
@@ -144,9 +143,8 @@ samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE
 colnames(expr_quant.all) = samplenames[(both),1]
 
 #Subtract out mean. Make sure this is what you want to do.
-#expr_nice <- t(apply(expr_quant.all,1,function(x){x-mean(x)}))
-#expr_stem <- expr_nice
-expr_stem <- rbind(expr_quant.all, type.fb)
+#expr_stem <- rbind(expr_quant.all, type.fb)
+expr_stem <- expr_quant.all
 dim(expr_stem)
 expr_stem_s <- expr_stem[,c(type.fb=="i")]
 dim(expr_stem_s)
@@ -155,12 +153,12 @@ dim(expr_stem_l)
 
 ####################################################################################################################
 ## This next section subsets your data to include only 1 probe per gene.The 3' most probe. 
-expr_stem <- expr_stem[-nrow(expr_stem),]
+#expr_stem <- expr_stem[-nrow(expr_stem),]
 expr_genes <- expr_stem
 
 # Convert probe IDs to gene names using Darren's file (has HGNC & ensembl)
 gene_names=c()
-for(i in 1:dim(expr_stem)[1]){ #The [1] is calling only the row number. Could have used nrow
+for(i in 1:dim(expr_stem)[1]){ 
   gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],8])) #creates a list of gene names the same length as expression data
 }
 rownames(expr_genes)=gene_names
@@ -210,61 +208,6 @@ abatch_all <- ComBat(expr_gene, array_batch.fb, mod=NULL)
 cor.abatch.int.g <- cor(abatch_all,method="pearson", use="complete.obs")
 heatmap.2(cor.abatch.int.g, Rowv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
-# 
-# ##Regress out array batch and add the intercept back in
-# abatch.residual.int.g = matrix(nrow= nrow(expr_gene), ncol = ncol(expr_gene))
-# rownames(abatch.residual.int.g) = rownames(expr_gene)
-# colnames(abatch.residual.int.g) = colnames(expr_gene)
-# for (i in 1:nrow(expr_gene)) {
-#   model= lm(expr_gene[i,]~ array_batch.fb)
-#   ##abatch.residual.int.g[i,] = resid(model) + model$coefficients[1]
-#   abatch.residual.int.g[i,] = resid(model) + mean(expr_gene[i,])
-# }
-# cor.abatch.int.g <- cor(abatch.residual.int.g,method="pearson", use="complete.obs")
-# heatmap.2(cor.abatch.int.g, Rowv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))),
-#           Colv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
-# 
-# abatch_all <- abatch.residual.int.g ## CHANGE TO STEM
-
-#Relationship between PCs and covariates for regressed data
-
-npcs = 4
-sum.PC <- prcomp(na.omit(abatch_all), scale=TRUE)
-results<-c()
-for (f in covars) {
-  for (i in 1:npcs)
-  {
-    s = summary(lm(sum.PC$rotation[,i]~f));
-    results<-c(results,pf(s$fstatistic[[1]],
-                          s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-               s$adj.r.squared)
-  }
-}
-resultsM_gene_corrected <-matrix(nrow = length(covars), ncol = 2*npcs, data =
-                                   results, byrow = TRUE)
-rownames(resultsM_gene_corrected) = covars_names
-colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
-resultsM_gene_corrected
-PC_table_all <- resultsM_gene_corrected
-
-#PCA plots for regressed data
-sum.PC <- prcomp(na.omit(abatch_all), scale=TRUE)
-sumsum <- summary(sum.PC)
-op <- par(mfrow = c(3,3), ## split region
-          oma = c(5,0,4,0) + 0.1, ## create outer margin
-          mar = c(5,4,2,2) + 0.1) ## shrink some margins
-tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
-title.PC = "PCA of Gene Expression in lcls"
-
-#prints out plots in c(#rows, #columns)
-color = indiv.fb
-par(mfrow = c(1,1),oma=c(0,0,2,0)) 
-plot(c(1:ncol(expr_stem)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(expr_stem)),sum.PC$rotation[,1], samplenames[(both),2], cex = 0.55, pos=3)   
-for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=samplenames[(both),2], cex = 0.8, pos=3)   
-}  
 
 
 #Making dendrograms
@@ -314,15 +257,29 @@ dim(abatch_lcl)
  ##############################################################################################################
 # Stems Analysis
 
+#Heatmap
 cor.stem <- cor(abatch_stem,method="pearson", use="complete.obs")
 heatmap.2(cor.stem, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
+
+#Dendrogram
 
 cor <- cor(abatch_stem, method="pearson")
 dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
-hc <- as.dendrogram(hc)
+#hc <- as.dendrogram(hc)
+#hccol <- rep("red", times=17)
+#indiv_vec <- as.vector(indiv.fs)
+hc_col <- c("red", "black", "forestgreen", "darkorchid2", "navy", "darkorange1")
+hc_col
+hc_names <- as.vector(name.fs)
+plotColoredClusters(hd=hc, labs=hc_names, cols=hc_col)
+
+
+hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
+hc_order <- c(1:17)
+plot(reorder(hc, hc_order))
 plot(hc)
 color <- indiv.fs
 plot(hc, main = "Cluster Dendrogram: Stems", cex.main = 1.5 , col = "#487AA1", col.main = "#45ADA8", col.lab = "lightcoral", col.axis = "#F38630", lwd = 3, lty = 1, sub = "", hang = -1) #, axes = FALSE)
@@ -331,7 +288,6 @@ axis(side = 2, at = seq(0.0, 1.4, .2), col = "#F38630", labels = FALSE, lwd = 2)
 mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630", las = 2)
 
 #Relationship between PCs and covariates for regressed data
-
 npcs = 4
 sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
 results<-c()
@@ -372,7 +328,6 @@ for(i in 2:4) {
 }  
 
 #Within individual pearson correlation coefficient
-## CHANGE TO STEM
 cor_2s <- c(cor[1,6],cor[1,12],cor[6,12])
 cor_5s <- c(cor[2,7],cor[2,13],cor[7,13])
 cor_6s <- c(cor[4,8],cor[8,14],cor[4,14]) ## CHANGE TO STEM
@@ -386,8 +341,6 @@ cor_wmeans_s <- apply(cor_within_s, 2, mean)
 
 # across individual correlation coefficients
 cor_plus <- cbind(cor, indiv.fs)
-#indiv_plus <- c(indiv.fs, 0)
-
 cor_plus <- rbind(cor_plus, indiv.fs)
 cor_plus
 
@@ -406,13 +359,14 @@ cor_all_stem
 boxplot(cor_all_stem)
 
 # Euclidean distance within and between indvl of PC projections 1 & 2
-dist12_ind <- c()
 PC12 <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
-#Dist by individual
+
+# Within Individual
+dist12_ind <- c()
 ind1 <- PC12[c(1,6,12),]
 ind2 <- PC12[c(2,7,13),]
-ind3 <- PC12[c(4,8,14),] ## CHANGE TO STEM
-ind4 <- PC12[c(3,9,15),] ## CHANGE TO STEM
+ind3 <- PC12[c(4,8,14),]
+ind4 <- PC12[c(3,9,15),]
 ind5 <- PC12[c(10,16),]
 ind6 <- PC12[c(5,11,17),]
 
@@ -422,10 +376,10 @@ md3 <- mean(dist(ind3))
 md4 <- mean(dist(ind4))
 md5 <- mean(dist(ind5))
 md6 <- mean(dist(ind6))
-mdS <- c(md1,md2,md3,md4,md5,md6) ## CHANGE TO STEM
-mdS_mean <- mean(mdS) ## CHANGE TO STEM
+mdS <- c(md1,md2,md3,md4,md5,md6)
+mdS_mean <- mean(mdS)
 
-#Dist across individuals
+# Across Individual
 
 dist_PC12_S <- as.matrix(dist(PC12))
 dist_PC12_S
@@ -597,7 +551,7 @@ mean_dist_all_lcl <- mean(dist_all_lcl)
 
 
 
-
+######################################################################################
 #Differential expression with limma
 
 design <- model.matrix(~0+type.fb)
@@ -613,9 +567,7 @@ contrast.matrix<-makeContrasts(iPSC-LCL,levels=design)
 fit2<-contrasts.fit(fit,contrast.matrix)
 
 fit2<-eBayes(fit2)
-# sel.diif<-p.adjust(fit2$F.p.value,method="fdr")<0.05
-# 
-# deg<-abatch_all[sel.diif,]
+
 output <- topTable(fit2, number=20000, p.value=.01)
 
 output
@@ -659,16 +611,15 @@ colnames(Edist) <- c("iPSCs", "LCLs")
 Edist_t <- t(Edist)
 Edist_t
 
-#Correlations - mean for each individual and overall
+#Correlations: mean for each individual and overall
 cor_wmeanl <- apply(cor_within_l,2, mean)
 cor_wmeans <- apply(cor_within_s,2, mean)
 cor_both <- cbind(cor_within_s, cor_within_l)
 cor_bmeans <- cbind(cor_wmeans, cor_wmeanl)
-boxplot(cor_bmeans)
-boxplot(cor_both)
-boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for Stem cells and LCLs")
 cor_all_both <- cbind(cor_all_lcl, cor_all_stem)
 boxplot(cor_all_both)
+boxplot(cor_both)
+boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for Stem cells and LCLs")
 
 cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
 cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
@@ -677,16 +628,14 @@ cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-len
 cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
 
 boxplot(cor_tots) #between all samples
-
 boxplot(cor_total) #mean for each group
 
-type <- c(rep("stem", times=length(cor_wmeans)), rep("lcl", times=length(cor_wmeanl)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
-group <- c(rep(as.factor("Within Individuals"), times=(length(cor_wmeans)+length(cor_wmeanl))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
-groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
+mean(cor_wmeans)
+mean(cor_wmeanl)
+median(cor_wmeans)
+median(cor_wmeanl)
 
-cor_df <- data.frame(cor_total_vec, type, group, groupn)
-
-#cor_df$group = factor(cor_df$group,levels=c("Within Individuals", "Between Individuals"))
+# Get P values
 t.test(cor_within_l, cor_all_lcl)
 t.test(cor_within_s, cor_all_stem)
 t.test(cor_wmeanl, cor_all_lcl)
@@ -703,11 +652,14 @@ t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
 pv_b <- signif(t_cor_b$p.value, 3)
 pv_b
 
+#Make nice boxplot
+type <- c(rep("stem", times=length(cor_wmeans)), rep("lcl", times=length(cor_wmeanl)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
+group <- c(rep(as.factor("Within Individuals"), times=(length(cor_wmeans)+length(cor_wmeanl))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
+groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
+
+cor_df <- data.frame(cor_total_vec, type, group, groupn)
+
 ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(vjust=1.0)) #stat_boxplot(geom ='errorbar', aes(x=group))  
-mean(cor_wmeans)
-mean(cor_wmeanl)
-median(cor_wmeans)
-median(cor_wmeanl)
 
 ## Coefficient of variatatiionn
 #Between samples coefficient of variation
@@ -719,7 +671,8 @@ mean(CV_S)
 mean(CV_L)
 t.test(CV_S, CV_L)
 
-#Calculate CV between individuals
+## Calculate CV between individuals ##
+# Pick a random line from each individual
 df_astem <- data.frame((abatch_stem))
 df_s1 <- df_astem[,(indiv.fs==2)]
 head(df_s1)
@@ -1072,8 +1025,9 @@ cv_nelcl_lcl <- CV_L[!(names(CV_L) %in% eQTL_lcls)]
 #bothvar_lcl_eQTLs <- c(mean_elcl_stemsrat, mean_elcl_lclrat, mean_elcl_stemvar, mean_elcl_lclvar)
 #bothvar_lcl_eQTLs
 
-dodge <- position_dodge(width=0.9)
+
 #Plot Variance
+dodge <- position_dodge(width=0.9)
 var_lcl_eQTLs <- c(elcl_stemvar, elcl_lclvar, var_stem, var_lcl)
 length(var_lcl_eQTLs)
 var_lcl_eQTLs <- sapply(var_lcl_eQTLs, log)
