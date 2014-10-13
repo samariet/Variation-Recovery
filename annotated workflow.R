@@ -21,6 +21,7 @@ library(sva)
 library(qpcR)
 library(limma)
 library(ClassDiscovery)
+library(stats)
 
 ############################################################################################
 #Input Data and low level analysis: probe filtering, normalization.
@@ -271,12 +272,11 @@ hc <- hclust(distance)
 #hc <- as.dendrogram(hc)
 #hccol <- rep("red", times=17)
 #indiv_vec <- as.vector(indiv.fs)
-hc_col <- c("red", "black", "forestgreen", "darkorchid2", "navy", "darkorange1")
+hc_col <- c("red", "black", "forestgreen", "darkorchid2", "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
+#hc_col <- c("red", "black")
 hc_col
 hc_names <- as.vector(name.fs)
-plotColoredClusters(hd=hc, labs=hc_names, cols=hc_col)
-
-
+plotColoredClusters(hd=hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
 hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
 hc_order <- c(1:17)
 plot(reorder(hc, hc_order))
@@ -416,17 +416,29 @@ dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
 
+cor <- cor(abatch_lcl, method="pearson")
+dis  <- 1-cor
+distance <- as.dist(dis)
+hc <- hclust(distance)
 hc <- as.dendrogram(hc)
-plot(hc)
-#plot(hclust(dist(t(abatch_all)), col.edge="green"))
-color <- indiv.fl
-plot(hc, main = "Cluster Dendrogram: LCLs", cex.main = 1.5 , col = "#487AA1", col.main = "#45ADA8", col.lab = "lightcoral", col.axis = "#F38630", lwd = 3, lty = 1, sub = "", hang = -1)
-axis(side = 2, at = seq(0.0, 1.4, .2), col = "#487AA1", labels = FALSE, lwd = 2)
-# add text in margin
-mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630", las = 2)
-
-
+#hc <- as.dendrogram(hc)
+#hccol <- rep("red", times=17)
+#indiv_vec <- as.vector(indiv.fs)
+hc_col <- c("red", "black","darkorchid2", "forestgreen",  "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
+#hc_col <- c("red", "black")
+hc_col
+hc_names <- as.vector(name.fl)
+plotColoredClusters(hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
+ par(xaxs="r",yaxs="r")
 #Relationship between PCs and covariates for regressed data
+hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
+hc_order <- c(1:17)
+hc_order <- c(1:7)
+plot(reorder(as.dendrogram(hc), hc_order))
+reorder.dendrogram(hc, hc_order)
+rhc<- reorder(hc,hc_order)
+plot(hc)
+plot(rhc)
 
 npcs = 4
 sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
