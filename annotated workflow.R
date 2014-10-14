@@ -716,11 +716,19 @@ ID_random
 head(random_stem)
 dim(random_stem)
 
+#select corresponding lcl
 random_lcl <- df_alcl[,which(df_alcl[nrow(df_alcl),] %in% ID_random)]
 #random_lcl <- cbind(sample(df_l1,1), sample(df_l2,1), sample(df_l3,1), sample(df_l4,1), sample(df_l5,1), sample(df_l6,1))
 length(random_lcl)
 names(random_lcl)
 head(random_stem)
+dim(random_lcl)
+
+random_stem <- random_stem[-nrow(random_stem),]
+random_lcl <- random_lcl[-nrow(random_lcl),]
+
+dim(random_stem)
+dim(random_lcl)
 
 random_stem_cv <- apply(random_stem, 1, cv)
 length(random_stem_cv)
@@ -797,12 +805,26 @@ var_stem <- apply(expr_stem,1,var) #calculate variance for each gene across all 
  
 #rownames(var_stem) <- rownames(expr_stem)
 mean_stem <- apply(expr_stem, 1, mean)
- var_stem <- log(var_stem)
-plot(mean_stem, cv_stem)
+log_var_stem <- log10(var_stem)
+log_cv_stem <- log10(var_stem/mean_stem)
+plot(mean_stem, log_cv_stem)
+plot(mean_stem, log_var_stem)
  
- cv_stem <- var_stem/mean_stem
- 
- #Calculate ratio of variance btw and within individuals for every gene
+
+mean_lcl <- apply(expr_LCL, 1, mean)
+l_var_lcl <- log10(var_lcl)
+l_cv_lcl <- log10(var_lcl/mean_lcl)
+plot(mean_lcl, l_cv_lcl)
+plot(mean_lcl, l_var_lcl)
+
+high_expr_lcl <- which(mean_lcl>7)
+length(high_expr_lcl)
+
+high_expr_stem <- which(mean_stem>7)
+length(high_expr_stem)
+
+
+#Calculate ratio of variance btw and within individuals for every gene
 var_ratio_stem <- vector()
 for(i in 1:length(var_stem)) {
   var_ratio_stem <- c(var_ratio_stem, (var_stem[i]/(mean(var_win_stem[i,]))))
@@ -1036,6 +1058,18 @@ mean(var_stem)
 mean(var_lcl)
 cv_nelcl_stem <- CV_S[!(names(CV_S) %in% eQTL_lcls)]
 cv_nelcl_lcl <- CV_L[!(names(CV_L) %in% eQTL_lcls)]
+
+elcl_lcl_expr <- expr_LCL[rownames(expr_LCL) %in% eQTL_lcls,]
+elcl_lcl_mean <- apply(elcl_lcl_expr, 1, mean)
+
+elcl_stem_expr <- expr_stem[rownames(expr_stem) %in% eQTL_lcls,]
+elcl_stem_mean <- apply(elcl_stem_expr, 1, mean)
+
+names_elcl_means <-  c("lcl mean eQTL genes", "ipsc mean eQTL genes")
+elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
+boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
+
+t.test(elcl_lcl_mean, elcl_stem_mean)
 
 #bothvar_lcl_eQTLs <- c(mean_elcl_stemsrat, mean_elcl_lclrat, mean_elcl_stemvar, mean_elcl_lclvar)
 #bothvar_lcl_eQTLs
