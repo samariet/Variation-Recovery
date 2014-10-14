@@ -685,9 +685,9 @@ t.test(CV_S, CV_L)
 
 ## Calculate CV between individuals ##
 # Pick a random line from each individual
-df_astem <- data.frame((abatch_stem))
+df_astem <- data.frame(rbind(abatch_stem, ID.fs))
 df_s1 <- df_astem[,(indiv.fs==2)]
-head(df_s1)
+tail(df_s1)
 df_s2 <- df_astem[,(indiv.fs==5)]
 df_s3 <- df_astem[,(indiv.fs==6)]
 df_s4 <- df_astem[,(indiv.fs==9)]
@@ -695,13 +695,13 @@ df_s5 <- df_astem[,(indiv.fs==10)]
 df_s6 <- df_astem[,(indiv.fs==14)]
 
 
-df_alcl <- data.frame((abatch_lcl))
-df_l1 <- df_alcl[,(indiv.fl==2)]
-df_l2 <- df_alcl[,(indiv.fl==5)]
-df_l3 <- df_alcl[,(indiv.fl==6)]
-df_l4 <- df_alcl[,(indiv.fl==9)]
-df_l5 <- df_alcl[,(indiv.fl==10)]
-df_l6 <- df_alcl[,(indiv.fl==14)]
+df_alcl <- data.frame(rbind(abatch_lcl, ID.fl))
+# df_l1 <- df_alcl[,(indiv.fl==2)]
+# df_l2 <- df_alcl[,(indiv.fl==5)]
+# df_l3 <- df_alcl[,(indiv.fl==6)]
+# df_l4 <- df_alcl[,(indiv.fl==9)]
+# df_l5 <- df_alcl[,(indiv.fl==10)]
+# df_l6 <- df_alcl[,(indiv.fl==14)]
 
 head(df_l5)
 
@@ -709,12 +709,15 @@ random_stem <- cbind(sample(df_s1,1),sample(df_s2,1), sample(df_s3,1), sample(df
 length(random_stem)
 names(random_stem)
 dim(random_stem)
+ID_random <- random_stem[(nrow(random_stem)),]
+ID_random
 
 #random_stem_m <- as.matrix(unlist(random_stem), nrow=nrow(abatch_stem), byrow=TRUE)
 head(random_stem)
 dim(random_stem)
 
-random_lcl <- cbind(sample(df_l1,1), sample(df_l2,1), sample(df_l3,1), sample(df_l4,1), sample(df_l5,1), sample(df_l6,1))
+random_lcl <- df_alcl[,which(df_alcl[nrow(df_alcl),] %in% ID_random)]
+#random_lcl <- cbind(sample(df_l1,1), sample(df_l2,1), sample(df_l3,1), sample(df_l4,1), sample(df_l5,1), sample(df_l6,1))
 length(random_lcl)
 names(random_lcl)
 head(random_stem)
@@ -1285,3 +1288,10 @@ ggplot(df_ma, aes(x=cat, y=explained), fill=type) + geom_bar(aes(fill=type), sta
 both <- data.frame(var=c(resultsM[,2], resultsM_s[,2]), type = rep(c("LCL", "Stem"), times=c(nrow(resultsM),nrow(resultsM_s))))
 ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xlab("p-Value") + ggtitle("Gene expression correlation with covariate individual") + theme(legend.position=c(.75,.75)) + theme(text = element_text(size=23)) 
 
+# Consolidate numbers you'll use in paper.
+telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
+telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
+names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", '-value for lcl eqtls vs all genes in ipscs')
+con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value)
+df_all <- data.frame(names, con_all)
+df_all
