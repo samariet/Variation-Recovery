@@ -224,24 +224,6 @@ axis(side = 2, at = seq(0.0, 1.4, .2), col = "#F38630", labels = FALSE, lwd = 2)
 # add text in margin
 mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630", las = 2)
 
-# vector of colors labelColors = c('red', 'blue', 'darkgreen', 'darkgrey',
-# 'purple')
-labelColors = c("#CDB380", "#036564", "#EB6841", "#EDC951", "red", "bllue")
-# cut dendrogram in 4 clusters
-clusMember = cutree(hc, 6)
-# function to get color labels
-colLab <- function(n) {
-  if (is.leaf(n)) {
-    a <- attributes(n)
-    labCol <- labelColors[clusMember[which(names(clusMember) == a$label)]]
-    attr(n, "nodePar") <- c(a$nodePar, lab.col = labCol)
-  }
-  n
-}
-# using dendrapply
-clusDendro = dendrapply(hc, colLab)
-# make plot
-plot(clusDendro, main = "Cool Dendrogram", type = "triangle")
 
 
 #Now prep for separate analysis in iPSCs and LCLs by splitting the dataset.
@@ -269,11 +251,7 @@ cor <- cor(abatch_stem, method="pearson")
 dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
-#hc <- as.dendrogram(hc)
-#hccol <- rep("red", times=17)
-#indiv_vec <- as.vector(indiv.fs)
 hc_col <- c("red", "black", "forestgreen", "darkorchid2", "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
-#hc_col <- c("red", "black")
 hc_col
 hc_names <- as.vector(name.fs)
 plotColoredClusters(hd=hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
@@ -403,7 +381,7 @@ for (i in 1:(nrow(dist_stem)-1)) {
 dist_all_stem
 mean_dist_all_stem <- mean(dist_all_stem)
 
-
+##################################################################################################################
 ##LCLs
 
 
@@ -421,15 +399,12 @@ dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
 hc <- as.dendrogram(hc)
-#hc <- as.dendrogram(hc)
-#hccol <- rep("red", times=17)
-#indiv_vec <- as.vector(indiv.fs)
 hc_col <- c("red", "black","darkorchid2", "forestgreen",  "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
-#hc_col <- c("red", "black")
 hc_col
 hc_names <- as.vector(name.fl)
 plotColoredClusters(hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
  par(xaxs="r",yaxs="r")
+
 #Relationship between PCs and covariates for regressed data
 hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
 hc_order <- c(1:17)
@@ -479,9 +454,6 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 0.8, pos=3)   
 }  
 
-# plot(sum.PC$rotation[,1], sum.PC$rotation[,2],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,2]*100),"% of variance", sep=" "))
-# text(sum.PC$rotation[,1], sum.PC$rotation[,2],labels=indiv.fl, cex = 0.8, pos=3) 
-# text(.245, 0.4, labels=c("Euclidean Distance of Clusters:\n p=\n",ED_t_lclx$p.value))
 
 #Within individual pearson correlation coefficient
 cor_2l <- c(cor[1,6],cor[1,12],cor[6,12])
@@ -563,7 +535,7 @@ mean_dist_all_lcl <- mean(dist_all_lcl)
 
 
 
-######################################################################################
+##################################################################################################################
 #Differential expression with limma
 
 design <- model.matrix(~0+type.fb)
@@ -594,7 +566,8 @@ result <- decideTests(fit2)
 
 result
 
-######################################################################################
+##################################################################################################################
+#Euclidean Distances of projections onto PCs 1 and 2
 #Distance between all
 ED_t_stem <- t.test(mdS, dist(PC12))
 Edist_stem <- c(mdS_mean, mean(dist(PC12)), ED_t_stem$p.value)
@@ -623,6 +596,7 @@ colnames(Edist) <- c("iPSCs", "LCLs")
 Edist_t <- t(Edist)
 Edist_t
 
+##################################################################################################################
 #Correlations: mean for each individual and overall
 cor_wmeanl <- apply(cor_within_l,2, mean)
 cor_wmeans <- apply(cor_within_s,2, mean)
@@ -673,7 +647,9 @@ cor_df <- data.frame(cor_total_vec, type, group, groupn)
 
 ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(vjust=1.0)) #stat_boxplot(geom ='errorbar', aes(x=group))  
 
-## Coefficient of variatatiionn
+
+##################################################################################################################
+## Coefficient of variatation
 #Between samples coefficient of variation
 cv <- function(x) (sd(x)/mean(x))
 CV_S <- apply(abatch_stem, 1, cv)
@@ -762,6 +738,7 @@ length(high_CVLS)
 CV_L <- random_lcl_cv
 CV_S <- random_stem_cv
 
+##################################################################################################################
 ## Variance within vs among indvls
 expr_LCL <- abatch_lcl
 
@@ -835,10 +812,6 @@ length(var_ratio_stem)
 mean(var_stem)
 mean(var_lcl)
 
-# for(i in 1:length(var_stem)) {
-#   var_ratio_stem <- c(var_ratio_stem, ((mean(var_win_stem[i,]))/var_stem[i]))
-# }
-# length(var_ratio_stem)
 
 ## Calculate variance across stem cells and variance across LCLS
 stem_var_rat <- var_ratio_stem
@@ -890,6 +863,9 @@ for(i in 1:2) {
   vectori <-  unlist(lcl_ordered[i,])
   boxplot(vectori~indiv.fs, lcl_ordered, names=(c("ind 1", "ind 2", "ind 3", "ind 4", "ind 5", "ind 6", "")), ylab="Gene Expression", main= rownames(lcl_ordered[i,]))
 }
+
+##################################################################################################################
+#Gene by gene: variane attributable to individual?
 
 #pvalues for each gene association with factor individual
 
@@ -981,7 +957,7 @@ var_all <- data.frame(var=c(var_stem, var_lcl), type = rep(c("iPSC", "LCL"), tim
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white')) +theme(text = element_text(size=18)) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 
 
-
+##################################################################################################################
 #eQTL enrichment
 library(plyr)
 ## Summarizes data.
@@ -1266,7 +1242,8 @@ telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
 
 names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
-           "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs")
-con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems)
+           "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs",
+           "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types")
+con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b)
 df_all <- data.frame(names, con_all)
 df_all
