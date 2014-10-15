@@ -806,10 +806,11 @@ var_stem <- apply(expr_stem,1,var) #calculate variance for each gene across all 
 #rownames(var_stem) <- rownames(expr_stem)
 mean_stem <- apply(expr_stem, 1, mean)
 log_var_stem <- log10(var_stem)
-log_cv_stem <- log10(var_stem/mean_stem)
+log_cv_stem <- log10(CV_S)
 plot(mean_stem, log_cv_stem)
 plot(mean_stem, log_var_stem)
- 
+
+plot(mean_stem, CV_S, ylim=c(0,0.05))
 
 mean_lcl <- apply(expr_LCL, 1, mean)
 l_var_lcl <- log10(var_lcl)
@@ -1071,9 +1072,6 @@ boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression 
 
 t.test(elcl_lcl_mean, elcl_stem_mean)
 
-#bothvar_lcl_eQTLs <- c(mean_elcl_stemsrat, mean_elcl_lclrat, mean_elcl_stemvar, mean_elcl_lclvar)
-#bothvar_lcl_eQTLs
-
 
 #Plot Variance
 dodge <- position_dodge(width=0.9)
@@ -1121,73 +1119,14 @@ write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ense
 write.table(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_top_1500_lcl.txt", sep="\t")
 
 
-#Now for all
-liver_eQTLs <- read.table(c("liver eQTLs.tab"), fill=TRUE)
-pons_eQTLs <- read.table(c("Brain Pons eQTLs.tab"), fill=TRUE)
-fcortex_eQTLs <- read.table(c("Brain Frontal Cortex eQTLs.tab"), fill=TRUE)
-cerebellum_eQTLs <- read.table(c("Brain Cerebellum eQTLs.tab"), fill=TRUE)
-tcortex_eQTLs <- read.table(c("Brain Temporal Cortex eQTLs.tab"), fill=TRUE)
-all_eQTLs <- read.table(c("non-lcl tissues eQTLs.tab"), fill=TRUE)
-
-#dim(liver_eQTLs) <- read.table(c("Liver eQTLs.tab"), fill=TRUE)
-all_eQTLs <- all_eQTLs
-all_eQTLs <- unique(all_eQTLs[,9])
-length(all_eQTLs)
-
-eall_stemvar <- var_stem[names(var_stem) %in% all_eQTLs]
-cv_eall_stem <- CV_S[names(CV_S) %in% all_eQTLs]
-cv_neall_stem <- CV_S[!(names(CV_S) %in% all_eQTLs)]
-length(eall_stemvar)
-length(cv_eall_stem)
-mean(cv_eall_stem)
-
-eall_lclvar <- var_lcl[names(var_lcl) %in% all_eQTLs]
-cv_eall_lcl <- CV_L[names(CV_L) %in% all_eQTLs]
-cv_neall_lcl <- CV_L[!(names(CV_L) %in% all_eQTLs)]
-length(eall_lclvar)
-length(cv_eall_lcl)
-mean(cv_eall_lcl)
-mean(cv_eall_stem)
-mean(CV_L)
-mean(CV_S)
-
-var_alleQTLs <- c(eall_stemvar, eall_lclvar, var_stem, var_lcl)
-
-cv_alleQTLs <- c(cv_eall_stem, cv_eall_lcl, CV_S, CV_L)
-cv_alleQTLs <- log2(cv_alleQTLs)
-names_var_all <- c(rep("iPSC", times=length(cv_eall_stem)),  rep("LCL", times=length(cv_eall_lcl)), rep("iPSC", times=length(CV_S)), rep("LCL", times=length(CV_L)))
-type_var_all <- c((rep("eQTL CV",  times=(length(cv_eall_stem)+length(cv_eall_lcl)))), (rep("mean CV", times=(length(CV_S)+length(CV_L))))) 
-
-dodge <- position_dodge(width=0.9)
-df_cv_all <- data.frame(cv_alleQTLs, names_var_all, type_var_all)
-df_cv_all_se <- summarySE(df_cv_all, measurevar="cv_alleQTLs", groupvars=c("type_var_all", "names_var_all"))
-ggplot(df_cv_all, aes(type_var_all, cv_alleQTLs, fill=names_var_all)) +geom_boxplot(aes(fill=names_var_all), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
-
-var_alleQTLs <- log(var_alleQTLs)
-df_var_all <- data.frame(var_alleQTLs, names_var_all, type_var_all)
-ggplot(df_var_all, aes(type_var_all, var_alleQTLs, fill=names_var_all)) + geom_boxplot(aes(fill=names_var_all), position=dodge)
-
 t.test(elcl_stemvar, elcl_lclvar)
 t.test(elcl_stemvar, var_stem)
 t.test(CV_S, CV_L)
-t.test(cv_eall_stem, cv_eall_lcl)
 t.test(cv_elcl_stem, cv_elcl_lcl)
-t.test(cv_eall_stem, CV_S)
-t.test(cv_eall_lcl, CV_L)
-t.test(cv_eall_lcl, cv_neall_lcl)
-t.test(cv_eall_stem, cv_neall_stem)
 t.test(cv_elcl_lcl, cv_nelcl_lcl)
 t.test(cv_elcl_stem, cv_nelcl_stem)
-#all
-cv_alleQTLs <- c(cv_eall_stem, cv_elcl_stem, cv_eall_lcl, cv_elcl_lcl, CV_S, CV_L)
-log_cv_alleQTLs <- log(cv_alleQTLs) #
-#cv_alleQTLs <- c(eall_stemvar, elcl_stemvar, eall_lclvar, elcl_lclvar, var_stem, var_lcl)
-names_var_all <- c(rep("iPSC", times=length(cv_eall_stem)+length(cv_elcl_stem)),  rep("LCL", times=length(cv_eall_lcl)+length(cv_elcl_lcl)), rep("iPSC", times=length(CV_S)), rep("LCL", times=length(CV_L)))
-type_var_all <- c(rep("all eQTL CV",  times=(length(cv_eall_stem))), rep("LCL eQTL CV", times=length(cv_elcl_stem)), rep("all eQTL CV", times=length(cv_eall_lcl)), rep("LCL eQTL CV", times=length(cv_elcl_lcl)), (rep("mean CV", times=(length(CV_S)+length(CV_L)))))
-df_cv_all <- data.frame(log_cv_alleQTLs, names_var_all, type_var_all)
-ggplot(df_cv_all, aes(type_var_all, log_cv_alleQTLs, fill=names_var_all)) +geom_boxplot(aes(fill=names_var_all), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
-
+##################################################################################################################
 #Amount of variation explained by individual
 results <- c()
 for (i in 1:nrow(abatch_stem)) {
@@ -1325,7 +1264,9 @@ ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xl
 # Consolidate numbers you'll use in paper.
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
-names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", '-value for lcl eqtls vs all genes in ipscs')
-con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value)
+
+names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
+           "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs")
+con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems)
 df_all <- data.frame(names, con_all)
 df_all
