@@ -160,7 +160,7 @@ expr_genes <- expr_stem
 # Convert probe IDs to gene names using Darren's file (has HGNC & ensembl)
 gene_names=c()
 for(i in 1:dim(expr_stem)[1]){ 
-  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],8])) #creates a list of gene names the same length as expression data
+  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],7])) #creates a list of gene names the same length as expression data
 }
 rownames(expr_genes)=gene_names
 Unique_genes = unique(rownames(expr_genes))
@@ -237,7 +237,7 @@ abatch_lcl <- abatch_lcl[-nrow(abatch_lcl),]
 dim(abatch_lcl)
 
 
- ##############################################################################################################
+###############################################################################################################
 # Stems Analysis
 
 #Heatmap
@@ -398,22 +398,21 @@ cor <- cor(abatch_lcl, method="pearson")
 dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
-hc <- as.dendrogram(hc)
 hc_col <- c("red", "black","darkorchid2", "forestgreen",  "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
-hc_col
 hc_names <- as.vector(name.fl)
 plotColoredClusters(hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
  par(xaxs="r",yaxs="r")
 
-#Relationship between PCs and covariates for regressed data
-hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
-hc_order <- c(1:17)
+hc_order <- c(13,3,2,4,6,5,8,7,9,10,17,12,1,14,15,16,11)
+hc_order <- c(1,2,3,4,5,6,7,8,9,10,11,12,17,14,15,16,13)
 hc_order <- c(1:7)
-plot(reorder(as.dendrogram(hc), hc_order))
-reorder.dendrogram(hc, hc_order)
 rhc<- reorder(hc,hc_order)
 plot(hc)
 plot(rhc)
+
+
+
+#Relationship between PCs and covariates for regressed data
 
 npcs = 4
 sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
@@ -542,8 +541,6 @@ design <- model.matrix(~0+type.fb)
 
 colnames(design) <- c("heart", "iPSC", "LCL")
 
-design
-
 fit <- lmFit(abatch_all, design)
 
 contrast.matrix<-makeContrasts(iPSC-LCL,levels=design)
@@ -554,13 +551,9 @@ fit2<-eBayes(fit2)
 
 output <- topTable(fit2, number=20000, p.value=.01)
 
-output
-head(output)
-
 adjust <- output[,5]
 head(adjust)
 length(adjust)
-adjust
 
 result <- decideTests(fit2)
 
@@ -672,12 +665,6 @@ df_s6 <- df_astem[,(indiv.fs==14)]
 
 
 df_alcl <- data.frame(rbind(abatch_lcl, ID.fl))
-# df_l1 <- df_alcl[,(indiv.fl==2)]
-# df_l2 <- df_alcl[,(indiv.fl==5)]
-# df_l3 <- df_alcl[,(indiv.fl==6)]
-# df_l4 <- df_alcl[,(indiv.fl==9)]
-# df_l5 <- df_alcl[,(indiv.fl==10)]
-# df_l6 <- df_alcl[,(indiv.fl==14)]
 
 head(df_l5)
 
@@ -893,14 +880,6 @@ length(which(adjust_lcls<.05))
 hist(adjust_stems)
 hist(adjust_lcls)
 
-summary(pvals_lcls)
-
-#plot(stem_var_rat, pvals_stems, xlim=c(0,5))
-#plot(lcl_var_rat, pvals_lcls)
-
-mean(pvals_stems)
-mean(pvals_lcls)
-
 #count significant genes
 sig_stems <- length(adjust_stems[adjust_stems<.05])
 sig_stems
@@ -922,6 +901,22 @@ bottom_stem <- rordereds[c(1:sig_stems),]
 bottom_lcl <- rorderedl[c(1:sig_lcls),]
 bottom_stemnames <- row.names(bottom_stem)
 bottom_lclnames <- row.names(bottom_lcl)
+names_all <- row.names(abatch_all)
+
+expr_LCL_highstem <- expr_LCL[rownames(expr_LCL) %in% bottom_stemnames,]
+expr_LCL_hs_mean <- apply(expr_LCL_highstem, 1, mean)
+expr_LCL_mean <- apply(expr_LCL, 1, mean)
+
+expr_stem_highstem <- expr_stem[rownames(expr_stem) %in% bottom_stemnames,]
+expr_stem_hs_mean <- apply(expr_stem_highstem, 1, mean)
+expr_stem_mean <- apply(expr_stem, 1, mean)
+
+length(expr_LCL_hs_mean)
+boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
+
+mean(expr_LCL)
+mean(expr_LCL_highstem)
+
 
 dim(tops)
 dim(topl)
@@ -935,6 +930,7 @@ length(roverlap)
 write(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/high var lcl.txt", sep="\t")
 write(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/high var stem.txt", sep="\t")
 write(roverlap, "C:/Users/a a/Documents/Lab/Variation Recovery/roverlap.txt", sep="\t")
+write(names_all, "C:/Users/a a/Documents/Lab/Variation Recovery/all detected genes.txt", sep="\t")
 
 # Density plots of variance across sample type
 gg_color_hue <- function(n) {
@@ -1005,7 +1001,9 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 
 ## LCL eQTLs only
 eQTL_lcls <- read.table(c("eQTLs lcls.tab"), fill=TRUE)
-eQTL_lcls <- unique(eQTL_lcls[,9])
+eQTL_lcls <- read.table(c("pritch_final_eqtl_list.txt"))
+eQTL_lcls <- unique(eQTL_lcls[,1])
+eQTL_lcls 
 
 length(eQTL_lcls)
 
@@ -1058,6 +1056,7 @@ names_var <- c(rep("iPSC", times=length(elcl_stemvar)), rep("LCL", times=length(
 length(names_var)
 type_var <- c((rep("eQTL var",  times=(length(elcl_stemvar)+length(elcl_lclvar)))), (rep("mean var", times=(length(var_stem)+length(var_lcl))))) 
 length(type_var)
+
 df_var <- data.frame(var_lcl_eQTLs, names_var, type_var, fill=TRUE)
 df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
 dodge <- position_dodge(width=0.9)
@@ -1082,14 +1081,30 @@ t.test(cv_elcl_lcl, cv_nelcl_lcl)
 t.test(cv_nelcl_lcl, cv_nelcl_stem)
 
 #Plot coefficient of variation with vs without eqtls
-cv_nlcleQTLs <- c(cv_elcl_stem, cv_elcl_lcl, cv_nelcl_stem, cv_nelcl_lcl)
-cv_nlog2 <- log2(cv_nlcleQTLs)
-names_var <- c(rep("iPSC", times=length(cv_elcl_stem)),  rep("LCL", times=length(cv_elcl_lcl)), rep("iPSC", times=length(cv_nelcl_stem)), rep("LCL", times=length(cv_nelcl_lcl)))
-type_var <- c((rep("eQTL var",  times=(length(cv_elcl_stem)+length(cv_elcl_lcl)))), (rep("no eQTL var", times=(length(cv_nelcl_stem)+length(cv_nelcl_lcl))))) 
+cv_nlcleQTLs <- c(cv_elcl_lcl, cv_elcl_stem, cv_nelcl_lcl, cv_nelcl_stem)
+cv_nlog2<- log2(cv_nlcleQTLs)
+names_var <- c(rep("LCL", times=length(cv_elcl_lcl)),  rep("iPSC", times=length(cv_elcl_stem)), rep("LCL", times=length(cv_nelcl_lcl)), rep("iPSC", times=length(cv_nelcl_stem)))
+type_var <- c((rep("Genes with eQTLs",  times=(length(cv_elcl_stem)+length(cv_elcl_lcl)))), (rep("Genes without eQTLs", times=(length(cv_nelcl_stem)+length(cv_nelcl_lcl))))) 
 df_ncv <- data.frame(cv_nlog2, names_var, type_var)
 df_ncv_se <- summarySE(df_ncv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
-ggplot(df_ncv, aes(type_var,cv_nlog2, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+ggplot(df_ncv, aes(type_var,cv_nlog2, fill=names_var)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
+expr_neqtl_stems<- expr_stem[!(rownames(expr_stem) %in% eQTL_lcls),]
+expr_stem_mean_neqtl <- apply(expr_neqtl_stems, 1, mean)
+
+expr_eqtl_stems<- expr_stem[(rownames(expr_stem) %in% eQTL_lcls),]
+expr_stem_mean_eqtl <- apply(expr_eqtl_stems, 1, mean)
+
+expr_neqtl_lcls<- expr_LCL[!(rownames(expr_LCL) %in% eQTL_lcls),]
+expr_lcl_mean_neqtl <- apply(expr_neqtl_lcls, 1, mean)
+
+expr_eqtl_lcls<- expr_LCL[(rownames(expr_LCL) %in% eQTL_lcls),]
+expr_lcl_mean_eqtl <- apply(expr_eqtl_lcls, 1, mean)
+
+expr_nmeans <- c(expr_stem_mean_eqtl,expr_lcl_mean_eqtl, expr_stem_mean_neqtl, expr_lcl_mean_neqtl)
+df_nmean <- data.frame(expr_nmeans, names_var, type_var)
+ggplot(df_nmean, aes(type_var,expr_nmeans, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+t.test(expr_stem_mean_eqtl, expr_lcl_mean_eqtl)
 
 write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_lcl_names.txt", sep="\t")
 write.table(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_top_1500_lcl.txt", sep="\t")
@@ -1121,16 +1136,12 @@ for (i in 1:nrow(abatch_stem)) {
                         s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
              s$r.squared)
 }
-resultsM_s_noadj <- matrix(ncol=2, data=results, byrow=TRUE)
+
 exp_s <- mean(resultsM_s[,2])
-exp_s
-mean(resultsM_s[,1])
-boxplot(resultsM_s[,2])
 
 a <- aov(abatch_stem[1,]~indiv.fs)
-a
-
 summary(a)
+
 for (i in 1:nrow(abatch_stem)) {
   s=summary(aov(abatch_stem[i,])~indiv.fs)
   results <- c(s)
@@ -1164,17 +1175,12 @@ mean(resultsM_noadj[,2])
 mean(resultsM_s[,2])
 mean(resultsM_s_noadj[,2])
 
-boxplot(resultsM[,1], resultsM_s[,1])
-
-boxplot(resultsM[,2], resultsM_s[,2], resultsM_noadj, resultsM_s_noadj)
-barplot(resultsM[,2], resultsM_s[,2])
-
 t.test(resultsM[,2], resultsM_s[,2])
 t.test(resultsM[,1], resultsM_s[,1])
 t.test(resultsM_noadj, resultsM_s_noadj)
 
 
- plot(resultsM[,1], resultsM_s[,1], what="density")
+plot(resultsM[,1], resultsM_s[,1], what="density")
 hist(resultsM[,2])
 
 exp_PC1s <- PC_table_stem[2,2]
@@ -1206,7 +1212,6 @@ df_exp_gene <- data.frame(explained_gene, type)
 dim(df_exp_gene)
 colnames(df_exp_gene) <- c("R2", "type")
 df_exp_se <- summarySE(df_exp_gene, measurevar="R2", groupvars=c("type"))
-df_exp_se
 ggplot(df_exp_se, aes(type, R2, fill=type)) + geom_bar( stat="identity",position=dodge)  + geom_errorbar(aes(ymin=R2-se, ymax=R2+se), width=0.2, position=dodge)
 
 df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
@@ -1214,28 +1219,22 @@ dodge <- position_dodge(width=0.9)
 ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
 
 #df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
-#type <- c("iPSC","LCL", "iPSC", "LCL")
 type <- c("LCL", "iPSC","LCL", "iPSC")
 cat <- c("mean explained", "mean explained","PC1", "PC1")
 means_all <- cbind(explained, type)
-means_all
 df_ma <- data.frame(explained)
 df_ma <- cbind (df_ma, type, cat)
 row.names(df_ma) <- cat2
-df_ma
-
 df_ma_me <- df_ma[c(1,2),]
 df_ma_me
 
 ggplot(df_ma_me, fill=type) + geom_bar(aes(row.names(df_ma_me), explained), stat="identity")
 ggplot(df_ma, aes(x=cat, y=explained), fill=type) + geom_bar(aes(fill=type), stat="identity", position=position_dodge()) + theme(axis.text.x = element_text(color="black"), axis.title.x=element_blank(), text=element_text(size=18)) + theme(panel.background=element_rect(fill='white'))#+ geom_errorbar(aes(ymin=val-se, ymax=val+se))
-ggplot(df_exp_se, aes(y=explained_avg), fill=type) + geom_bar(aes(fill=type), stat="identity", position=position_dodge()) #+ geom_errorbar(aes(ymin=val-se, ymax=val+se))
-
-
-ggplot(df_ma, aes(x=cat, y=explained), fill=type) + geom_bar(aes(fill=type), stat="identity")
 
 both <- data.frame(var=c(resultsM[,2], resultsM_s[,2]), type = rep(c("LCL", "Stem"), times=c(nrow(resultsM),nrow(resultsM_s))))
 ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xlab("p-Value") + ggtitle("Gene expression correlation with covariate individual") + theme(legend.position=c(.75,.75)) + theme(text = element_text(size=23)) 
+
+##################################################################################################################
 
 # Consolidate numbers you'll use in paper.
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
@@ -1243,7 +1242,12 @@ telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
 
 names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
            "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs",
-           "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types")
-con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b)
+           "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types",
+           "number of differentially expressed genes FDR<0.01")
+con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
 df_all <- data.frame(names, con_all)
 df_all
+
+#Plots
+hist(adjust_stems)
+hist(adjust_lcls)
