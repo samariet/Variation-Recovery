@@ -1,6 +1,6 @@
 # 
 # # updateR()
-# # Instead of updating packageess, reinstall.
+# # Instead of updating packageess, reinstall. Or repos something.
 #  source("http://bioconductor.org/biocLite.R")
 #  biocLite()  
 # # 
@@ -388,11 +388,6 @@ mean_dist_all_stem <- mean(dist_all_stem)
 cor.lcl <- cor(abatch_lcl,method="pearson", use="complete.obs")
 heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.lcl))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.lcl))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
-
-cor <- cor(abatch_lcl, method="pearson")
-dis  <- 1-cor
-distance <- as.dist(dis)
-hc <- hclust(distance)
 
 cor <- cor(abatch_lcl, method="pearson")
 dis  <- 1-cor
@@ -882,21 +877,14 @@ hist(adjust_lcls)
 
 #count significant genes
 sig_stems <- length(adjust_stems[adjust_stems<.05])
-sig_stems
 sig_lcls <- length(adjust_lcls[adjust_lcls<.05])
-sig_lcls
 
+#Set significance cutoff for plot
 cutoff_stems <- rordereds[sig_stems,]
 cutoff_lcls <- rorderedl[sig_lcls,]
-cutoff_stems
-cutoff_lcls
 cutoff_avg <- mean(c(cutoff_stems[,1], cutoff_lcls[,1]))
-cutoff_avg
-
 
 #Subset top and bottom
-tops <- ordereds[c(1:sig_stems),]
-topl <- orderedl[c(1:sig_lcls),]
 bottom_stem <- rordereds[c(1:sig_stems),]
 bottom_lcl <- rorderedl[c(1:sig_lcls),]
 bottom_stemnames <- row.names(bottom_stem)
@@ -914,23 +902,15 @@ expr_stem_mean <- apply(expr_stem, 1, mean)
 length(expr_LCL_hs_mean)
 boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
 
-mean(expr_LCL)
-mean(expr_LCL_highstem)
-
-
-dim(tops)
-dim(topl)
-
 #Overlap of top and bottom between cell types
 overlap <- intersect(tops[,2], topl[,2])
 length(overlap)
 roverlap <- intersect(bottom_stem[,2], bottom_lcl[,2])
 length(roverlap)
 
-write(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/high var lcl.txt", sep="\t")
-write(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/high var stem.txt", sep="\t")
-write(roverlap, "C:/Users/a a/Documents/Lab/Variation Recovery/roverlap.txt", sep="\t")
-write(names_all, "C:/Users/a a/Documents/Lab/Variation Recovery/all detected genes.txt", sep="\t")
+write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_lcl_names.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_stem_names.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(names_all, "C:/Users/a a/Documents/Lab/Variation Recovery/ennsembl_all_names.txt", sep="\t", row.names=F, col.names=F, quote=F)
 
 # Density plots of variance across sample type
 gg_color_hue <- function(n) {
@@ -1106,10 +1086,6 @@ df_nmean <- data.frame(expr_nmeans, names_var, type_var)
 ggplot(df_nmean, aes(type_var,expr_nmeans, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 t.test(expr_stem_mean_eqtl, expr_lcl_mean_eqtl)
 
-write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_lcl_names.txt", sep="\t")
-write.table(bottom_stemnames, "C:/Users/a a/Documents/Lab/Variation Recovery/ensembl_top_1500_lcl.txt", sep="\t")
-
-
 t.test(elcl_stemvar, elcl_lclvar)
 t.test(elcl_stemvar, var_stem)
 t.test(CV_S, CV_L)
@@ -1129,23 +1105,8 @@ for (i in 1:nrow(abatch_stem)) {
 
 resultsM_s <- matrix(ncol=2, data=results, byrow=TRUE)
 
-results <- c()
-for (i in 1:nrow(abatch_stem)) {
-  s = summary(lm(abatch_stem[i,]~indiv.fs));
-  results<-c(results,pf(s$fstatistic[[1]],
-                        s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-             s$r.squared)
-}
-
 exp_s <- mean(resultsM_s[,2])
 
-a <- aov(abatch_stem[1,]~indiv.fs)
-summary(a)
-
-for (i in 1:nrow(abatch_stem)) {
-  s=summary(aov(abatch_stem[i,])~indiv.fs)
-  results <- c(s)
-}
 
 #LCLs
 
@@ -1159,21 +1120,6 @@ for (i in 1:nrow(abatch_lcl)) {
 
 resultsM <- matrix(ncol=2, data=results, byrow=TRUE)
 
-results <- c()
-for (i in 1:nrow(abatch_lcl)) {
-  s = summary(lm(abatch_lcl[i,]~indiv.fl));
-  results<-c(results,pf(s$fstatistic[[1]],
-                        s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-             s$r.squared)
-}
-
-resultsM_noadj <- matrix(ncol=2, data=results, byrow=TRUE)
-exp_l <- mean(resultsM[,2])
-exp_l
-mean(resultsM[,2])
-mean(resultsM_noadj[,2])
-mean(resultsM_s[,2])
-mean(resultsM_s_noadj[,2])
 
 t.test(resultsM[,2], resultsM_s[,2])
 t.test(resultsM[,1], resultsM_s[,1])
@@ -1239,12 +1185,15 @@ ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xl
 # Consolidate numbers you'll use in paper.
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
+t_varexpl <- t.test(resultsM[,2], resultsM_s[,2])
+t_varexpl
 
-names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
+names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl vs ipsc variance explained by donor", 
+           "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
            "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs",
            "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types",
            "number of differentially expressed genes FDR<0.01")
-con_all <- c(exp_l, exp_s, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
+con_all <- c(exp_l, exp_s, t_varexpl$p.value, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
 df_all <- data.frame(names, con_all)
 df_all
 
