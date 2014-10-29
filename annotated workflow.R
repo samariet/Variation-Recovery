@@ -251,19 +251,10 @@ cor <- cor(abatch_stem, method="pearson")
 dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
-hc_col <- c("red", "black", "forestgreen", "darkorchid2", "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
-hc_col
-hc_names <- as.vector(name.fs)
-plotColoredClusters(hd=hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
-hc_order <- c(1,3,2,4,6,5,8,7,9,10,11,12,13,14,15,16,17)
-hc_order <- c(1:17)
-plot(reorder(hc, hc_order))
 plot(hc)
-color <- indiv.fs
-plot(hc, main = "Cluster Dendrogram: Stems", cex.main = 1.5 , col = "#487AA1", col.main = "#45ADA8", col.lab = "lightcoral", col.axis = "#F38630", lwd = 3, lty = 1, sub = "", hang = -1) #, axes = FALSE)
-axis(side = 2, at = seq(0.0, 1.4, .2), col = "#F38630", labels = FALSE, lwd = 2)
-# add text in margin
-mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630", las = 2)
+dhc <- as.dendrogram(hc)
+plot(dhc)
+plot(hc, lwd = 3, lty = 1, sub = "", hang = -1)
 
 #Relationship between PCs and covariates for regressed data
 npcs = 4
@@ -393,18 +384,12 @@ cor <- cor(abatch_lcl, method="pearson")
 dis  <- 1-cor
 distance <- as.dist(dis)
 hc <- hclust(distance)
-hc_col <- c("red", "black","darkorchid2", "forestgreen",  "navy", "red", "black", "darkorchid2","forestgreen", "darkorange1", "navy", "red", "black","darkorchid2", "forestgreen", "darkorange1", "navy")
-hc_names <- as.vector(name.fl)
-plotColoredClusters(hc, labs=hc_names, cols=hc_col, lwd=2, font.lab=2, font.axis=2, font.sub=2, cex=1.2, sub = "", xlab="") #lty=3)
- par(xaxs="r",yaxs="r")
-
-hc_order <- c(13,3,2,4,6,5,8,7,9,10,17,12,1,14,15,16,11)
-hc_order <- c(1,2,3,4,5,6,7,8,9,10,11,12,17,14,15,16,13)
-hc_order <- c(1:7)
-rhc<- reorder(hc,hc_order)
-plot(hc)
-plot(rhc)
-
+hc_order <- c(11, 7, 8, 10, 1, 16, 9, 12, 6, 5, 3, 17, 15, 13, 4, 14, 2)
+dhc <- as.dendrogram(hc)
+rhc<- reorder(dhc,hc_order)
+#plot(hc)
+plot(rhc, lty=5, lwd=2)
+plot(hc, lwd = 3, lty = 1, sub = "", hang = -1)
 
 
 #Relationship between PCs and covariates for regressed data
@@ -633,7 +618,7 @@ groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", ti
 
 cor_df <- data.frame(cor_total_vec, type, group, groupn)
 
-ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(vjust=1.0)) #stat_boxplot(geom ='errorbar', aes(x=group))  
+ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
 
 
 ##################################################################################################################
@@ -923,14 +908,14 @@ cols = gg_color_hue(2)
 #pretty <- c("palevioletred2", "royalblue2")
 var_all <- data.frame(var=c(stem_var_rat, lcl_var_rat), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("2", "1"), times=c(length(stem_var_rat),length(lcl_var_rat))))
 #var_all <- data.frame(var=c(lcl_var_rat, stem_var_rat), type = rep(c("LCL", "iPSC"), times=c(length(lcl_var_rat),length(stem_var_rat))))
-ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=6, y=.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
+ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(legend.position=c(.75,.75), legend.title=element_blank(), axis.title=element_text(size=14), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=6, y=.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
 
 #Absolute
 
 #pretty <- rev(pretty)
 # var_all <- data.frame(var=c(var_lcl, var_stem), type = rep(c("LCL", "Stem"), times=c(length(lcl_var_rat),length(stem_var_rat))))
 var_all <- data.frame(var=c(var_stem, var_lcl), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("1", "2"), times=c(length(stem_var_rat),length(lcl_var_rat))))
-ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white')) +theme(text = element_text(size=18)) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
+ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white'), axis.title=element_text(size=14)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 
 
 ##################################################################################################################
@@ -1067,7 +1052,7 @@ names_var <- c(rep("LCL", times=length(cv_elcl_lcl)),  rep("iPSC", times=length(
 type_var <- c((rep("Genes with eQTLs",  times=(length(cv_elcl_stem)+length(cv_elcl_lcl)))), (rep("Genes without eQTLs", times=(length(cv_nelcl_stem)+length(cv_nelcl_lcl))))) 
 df_ncv <- data.frame(cv_nlog2, names_var, type_var)
 df_ncv_se <- summarySE(df_ncv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
-ggplot(df_ncv, aes(type_var,cv_nlog2, fill=names_var)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+ggplot(df_ncv, aes(type_var,cv_nlog2, fill=names_var)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
 expr_neqtl_stems<- expr_stem[!(rownames(expr_stem) %in% eQTL_lcls),]
 expr_stem_mean_neqtl <- apply(expr_neqtl_stems, 1, mean)
@@ -1120,14 +1105,15 @@ for (i in 1:nrow(abatch_lcl)) {
 
 resultsM <- matrix(ncol=2, data=results, byrow=TRUE)
 
+exp_l <- mean(resultsM[,2])
 
 t.test(resultsM[,2], resultsM_s[,2])
 t.test(resultsM[,1], resultsM_s[,1])
 t.test(resultsM_noadj, resultsM_s_noadj)
 
 
-plot(resultsM[,1], resultsM_s[,1], what="density")
-hist(resultsM[,2])
+#plot(resultsM[,1], resultsM_s[,1], what="density")
+#hist(resultsM[,2])
 
 exp_PC1s <- PC_table_stem[2,2]
 exp_PC1l <- PC_table_lcl[2,2]
@@ -1138,9 +1124,9 @@ exp_PC3l <- PC_table_lcl[2,6]
 exp_PC4s <- PC_table_stem[2,8]
 exp_PC4l <- PC_table_lcl[2,8]
 
-print(c(exp_PC1s, exp_PC1l, exp_PC2s, exp_PC2l))
-PC_table_stem
-PC_table_lcl
+#print(c(exp_PC1s, exp_PC1l, exp_PC2s, exp_PC2l))
+#PC_table_stem
+#PC_table_lcl
 
 explained_avg <- c(exp_l, exp_s)
 df_avg <- data.frame(explained_avg)
@@ -1185,17 +1171,23 @@ ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xl
 # Consolidate numbers you'll use in paper.
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
+telcl_svsl <- t.test(cv_elcl_stem, cv_elcl_lcl)
 t_varexpl <- t.test(resultsM[,2], resultsM_s[,2])
 t_varexpl
 
 names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl vs ipsc variance explained by donor", 
-           "p-value for lcl eqtls vs all genes in lcls", "-value for lcl eqtls vs all genes in ipscs",
+           "p-value for lcl eqtls vs all genes in lcls", "p-value for lcl eqtls vs all genes in ipscs",
+           "p-value for lcl eqtls in stems vs ipscs",
            "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs",
            "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types",
            "number of differentially expressed genes FDR<0.01")
-con_all <- c(exp_l, exp_s, t_varexpl$p.value, telcl_lcl$p.value, telcl_stem$p.value, sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
+con_all <- c(exp_l, exp_s, t_varexpl$p.value,  telcl_lcl$p.value, telcl_stem$p.value, telcl_svsl$p.value,sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
 df_all <- data.frame(names, con_all)
 df_all
+
+t_var
+t_var_rat
+Edist
 
 #Plots
 hist(adjust_stems)
