@@ -22,6 +22,7 @@ library(qpcR)
 library(limma)
 library(ClassDiscovery)
 library(stats)
+library(topGO)
 
 ############################################################################################
 #Input Data and low level analysis: probe filtering, normalization.
@@ -1050,9 +1051,10 @@ cv_nlcleQTLs <- c(cv_elcl_lcl, cv_elcl_stem, cv_nelcl_lcl, cv_nelcl_stem)
 cv_nlog2<- log2(cv_nlcleQTLs)
 names_var <- c(rep("LCL", times=length(cv_elcl_lcl)),  rep("iPSC", times=length(cv_elcl_stem)), rep("LCL", times=length(cv_nelcl_lcl)), rep("iPSC", times=length(cv_nelcl_stem)))
 type_var <- c((rep("Genes with eQTLs",  times=(length(cv_elcl_stem)+length(cv_elcl_lcl)))), (rep("Genes without eQTLs", times=(length(cv_nelcl_stem)+length(cv_nelcl_lcl))))) 
-df_ncv <- data.frame(cv_nlog2, names_var, type_var)
+cell_type <- c(rep("1", times=length(cv_elcl_lcl)),  rep("2", times=length(cv_elcl_stem)), rep("1", times=length(cv_nelcl_lcl)), rep("2", times=length(cv_nelcl_stem)))
+df_ncv <- data.frame(cv_nlog2, names_var, type_var, cell_type)
 df_ncv_se <- summarySE(df_ncv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
-ggplot(df_ncv, aes(type_var,cv_nlog2, fill=names_var)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
 expr_neqtl_stems<- expr_stem[!(rownames(expr_stem) %in% eQTL_lcls),]
 expr_stem_mean_neqtl <- apply(expr_neqtl_stems, 1, mean)
@@ -1107,13 +1109,6 @@ resultsM <- matrix(ncol=2, data=results, byrow=TRUE)
 
 exp_l <- mean(resultsM[,2])
 
-t.test(resultsM[,2], resultsM_s[,2])
-t.test(resultsM[,1], resultsM_s[,1])
-t.test(resultsM_noadj, resultsM_s_noadj)
-
-
-#plot(resultsM[,1], resultsM_s[,1], what="density")
-#hist(resultsM[,2])
 
 exp_PC1s <- PC_table_stem[2,2]
 exp_PC1l <- PC_table_lcl[2,2]
@@ -1123,10 +1118,6 @@ exp_PC3s <- PC_table_stem[2,6]
 exp_PC3l <- PC_table_lcl[2,6]
 exp_PC4s <- PC_table_stem[2,8]
 exp_PC4l <- PC_table_lcl[2,8]
-
-#print(c(exp_PC1s, exp_PC1l, exp_PC2s, exp_PC2l))
-#PC_table_stem
-#PC_table_lcl
 
 explained_avg <- c(exp_l, exp_s)
 df_avg <- data.frame(explained_avg)
