@@ -50,7 +50,7 @@ lcls = c(1,3,5,7,9,13,15,17,19,21,23,25,27,29,31,33,35)
 #Covariates indexes from file. 
 samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE)
 
-#First both togethre
+#First both together
 name =samplenames[,1]
 indiv = samplenames[,2]
 type = samplenames[,3]
@@ -636,13 +636,13 @@ t.test(CV_S, CV_L)
 ## Calculate CV between individuals ##
 # Pick a random line from each individual
 df_astem <- data.frame(rbind(abatch_stem, ID.fs))
-df_s1 <- df_astem[,(indiv.fs==2)]
+df_s1 <- df_astem[,(indiv.fs==1)]
 tail(df_s1)
-df_s2 <- df_astem[,(indiv.fs==5)]
-df_s3 <- df_astem[,(indiv.fs==6)]
-df_s4 <- df_astem[,(indiv.fs==9)]
-df_s5 <- df_astem[,(indiv.fs==10)]
-df_s6 <- df_astem[,(indiv.fs==14)]
+df_s2 <- df_astem[,(indiv.fs==2)]
+df_s3 <- df_astem[,(indiv.fs==3)]
+df_s4 <- df_astem[,(indiv.fs==4)]
+df_s5 <- df_astem[,(indiv.fs==5)]
+df_s6 <- df_astem[,(indiv.fs==6)]
 
 
 df_alcl <- data.frame(rbind(abatch_lcl, ID.fl))
@@ -1150,12 +1150,6 @@ df_ma <- cbind (df_ma, type, cat)
 row.names(df_ma) <- cat2
 df_ma_me <- df_ma[c(1,2),]
 df_ma_me
-
-ggplot(df_ma_me, fill=type) + geom_bar(aes(row.names(df_ma_me), explained), stat="identity")
-ggplot(df_ma, aes(x=cat, y=explained), fill=type) + geom_bar(aes(fill=type), stat="identity", position=position_dodge()) + theme(axis.text.x = element_text(color="black"), axis.title.x=element_blank(), text=element_text(size=18)) + theme(panel.background=element_rect(fill='white'))#+ geom_errorbar(aes(ymin=val-se, ymax=val+se))
-
-both <- data.frame(var=c(resultsM[,2], resultsM_s[,2]), type = rep(c("LCL", "Stem"), times=c(nrow(resultsM),nrow(resultsM_s))))
-ggplot(both, aes(x=var, fill=type)) + geom_density(alpha=0.5) +xlim(-.25,2.5)+xlab("p-Value") + ggtitle("Gene expression correlation with covariate individual") + theme(legend.position=c(.75,.75)) + theme(text = element_text(size=23)) 
 
 ##################################################################################################################
 
