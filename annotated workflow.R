@@ -571,9 +571,9 @@ Edist_t <- t(Edist)
 Edist_t
 
 ##################################################################################################################
-#Correlations: mean for each individual and overall
-cor_wmeanl <- apply(cor_within_l,2, mean)
-cor_wmeans <- apply(cor_within_s,2, mean)
+#Correlations: mean for each individual and for all samples of all individuals
+cor_wmeanl <- apply(cor_within_l,2, mean, na.rm=TRUE)
+cor_wmeans <- apply(cor_within_s,2, mean, na.rm=TRUE)
 cor_both <- cbind(cor_within_s, cor_within_l)
 cor_bmeans <- cbind(cor_wmeans, cor_wmeanl)
 cor_all_both <- cbind(cor_all_lcl, cor_all_stem)
@@ -590,10 +590,6 @@ cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_ste
 boxplot(cor_tots) #between all samples
 boxplot(cor_total) #mean for each group
 
-mean(cor_wmeans)
-mean(cor_wmeanl)
-median(cor_wmeans)
-median(cor_wmeanl)
 
 # Get P values
 t.test(cor_within_l, cor_all_lcl)
@@ -1026,7 +1022,7 @@ length(type_var)
 df_var <- data.frame(var_lcl_eQTLs, names_var, type_var, fill=TRUE)
 df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
 dodge <- position_dodge(width=0.9)
-ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
+#ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
 ggplot(df_var, aes(type_var, var_lcl_eQTLs, fill=names_var)) + geom_boxplot(aes(fill=names_var), position=dodge)
 
 #Plot coefficient of variation
