@@ -1109,47 +1109,8 @@ resultsM <- matrix(ncol=2, data=results, byrow=TRUE)
 
 exp_l <- mean(resultsM[,2])
 
-
-exp_PC1s <- PC_table_stem[2,2]
-exp_PC1l <- PC_table_lcl[2,2]
-exp_PC2s <- PC_table_stem[2,4]
-exp_PC2l <- PC_table_lcl[2,4]
-exp_PC3s <- PC_table_stem[2,6]
-exp_PC3l <- PC_table_lcl[2,6]
-exp_PC4s <- PC_table_stem[2,8]
-exp_PC4l <- PC_table_lcl[2,8]
-
 explained_avg <- c(exp_l, exp_s)
-df_avg <- data.frame(explained_avg)
-explained_PC <- c(exp_PC1s, exp_PC1l, exp_PC2s, exp_PC2l, exp_PC3s, exp_PC3l, exp_PC4s, exp_PC4l)
-type_PC <- c("iPSC", "LCL","iPSC", "LCL","iPSC", "LCL","iPSC", "LCL")
-num_PC <- c("1", "1", "2", "2", "3", "3", "4", "4")
-df_PC <- data.frame(explained_PC, type_PC, num_PC)
-ggplot(df_PC, aes(num_PC, explained_PC, fill=type_PC))+geom_bar(stat="identity", position=dodge)
-print(explained_PC)
-explained <- c(exp_l, exp_s, exp_PC1l, exp_PC1s)
-explained_gene <- c(resultsM_s[,2], resultsM[,2])
 
-type <- c(rep("iPSC", times=nrow(resultsM_s)), rep("LCL", times=nrow(resultsM)))
-df_exp_gene <- data.frame(explained_gene, type)
-dim(df_exp_gene)
-colnames(df_exp_gene) <- c("R2", "type")
-df_exp_se <- summarySE(df_exp_gene, measurevar="R2", groupvars=c("type"))
-ggplot(df_exp_se, aes(type, R2, fill=type)) + geom_bar( stat="identity",position=dodge)  + geom_errorbar(aes(ymin=R2-se, ymax=R2+se), width=0.2, position=dodge)
-
-df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
-dodge <- position_dodge(width=0.9)
-ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
-
-#df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
-type <- c("LCL", "iPSC","LCL", "iPSC")
-cat <- c("mean explained", "mean explained","PC1", "PC1")
-means_all <- cbind(explained, type)
-df_ma <- data.frame(explained)
-df_ma <- cbind (df_ma, type, cat)
-row.names(df_ma) <- cat2
-df_ma_me <- df_ma[c(1,2),]
-df_ma_me
 
 ##################################################################################################################
 
