@@ -224,13 +224,15 @@ axis(side = 2, at = seq(0.0, 1.4, .2), col = "#F38630", labels = FALSE, lwd = 2)
 # add text in margin
 mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630", las = 2)
 
-
+##################################################################################################################
 
 #Split iPSCs and LCLs into separate objects
 abatch_stem <- abatch_all[,c(type.fb=="i")]
 dim(abatch_stem)
 abatch_lcl<- abatch_all[,c(type.fb=="L")]
 dim(abatch_lcl)
+
+##################################################################################################################
 
 
 #Heatmaps
@@ -242,7 +244,9 @@ cor.lcl <- cor(abatch_lcl,method="pearson", use="complete.obs")
 heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
-#Dendrogram
+##################################################################################################################
+
+#Dendrograms
 
 dis  <- 1-cor.stem
 distance <- as.dist(dis)
@@ -250,6 +254,52 @@ hc <- hclust(distance)
 dhc <- as.dendrogram(hc)
 plot(dhc)
 plot(hc, lwd = 2, lty = 1, sub = "", hang = -1)
+
+dis  <- 1-cor.lcl
+distance <- as.dist(dis)
+hc <- hclust(distance)
+hc_order <- c(11, 7, 8, 10, 1, 16, 9, 12, 6, 5, 3, 17, 15, 13, 4, 14, 2)
+dhc <- as.dendrogram(hc)
+rhc <- reorder(dhc,hc_order)
+plot(dhc)
+plot(rhc, lty=5, lwd=3)
+plot(hc, lwd = 2, lty = 1, sub = "", hang = -1)
+
+##################################################################################################################
+
+### PCA ###
+
+sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
+sumsum <- summary(sum.PC)
+op <- par(mfrow = c(3,3), ## split region
+          oma = c(5,0,4,0) + 0.1, ## create outer margin
+          mar = c(5,4,2,2) + 0.1) ## shrink some margins
+tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
+title.PC = "PCA of Gene Expression in iPSCs"
+color = indiv.fs
+par(mfrow = c(1,1),oma=c(0,0,2,0)) 
+plot(c(1:ncol(abatch_stem)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
+text(c(1:ncol(abatch_stem)),sum.PC$rotation[,1], indiv.fs, cex = 0.55, pos=3)   
+for(i in 2:4) {
+  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
+  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 0.8, pos=3)   
+}  
+
+sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
+sumsum <- summary(sum.PC)
+op <- par(mfrow = c(3,3), ## split region
+          oma = c(5,0,4,0) + 0.1, ## create outer margin
+          mar = c(5,4,2,2) + 0.1) ## shrink some margins
+tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
+title.PC = "PCA of Gene Expression in LCLs"
+color = indiv.fl
+par(mfrow = c(1,1),oma=c(0,0,2,0)) 
+plot(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
+text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fs, cex = 0.55, pos=3)   
+for(i in 2:4) {
+  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
+  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 0.8, pos=3)   
+}  
 
 #Relationship between PCs and covariates for regressed data
 npcs = 4
@@ -269,29 +319,33 @@ resultsM_gene_corrected <-matrix(nrow = length(covars), ncol = 2*npcs, data =
 rownames(resultsM_gene_corrected) = covars_names.s
 colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
 resultsM_gene_corrected
-PC_table_stem <- resultsM_gene_correctde
+PC_table_stem <- resultsM_gene_corrected
 
+#LCL
+npcs = 4
+sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
+results<-c()
+for (f in covars.l) {
+  for (i in 1:npcs)
+  {
+    s = summary(lm(sum.PC$rotation[,i]~f));
+    results<-c(results,pf(s$fstatistic[[1]],
+                          s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
+               s$adj.r.squared)
+  }
+}
+resultsM_gene_corrected_lcl <-matrix(nrow = length(covars), ncol = 2*npcs, data =
+                                   results, byrow = TRUE)
+rownames(resultsM_gene_corrected_lcl) = covars_names.s
+colnames(resultsM_gene_corrected_lcl) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
+resultsM_gene_corrected_lcl
+PC_table_lcl <- resultsM_gene_corrected_lcl
 
-#PCA plots for regressed data
-sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
-sumsum <- summary(sum.PC)
-op <- par(mfrow = c(3,3), ## split region
-          oma = c(5,0,4,0) + 0.1, ## create outer margin
-          mar = c(5,4,2,2) + 0.1) ## shrink some margins
-tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
-title.PC = "PCA of Gene Expression in Stemss"
+##################################################################################################################
 
-#prints out plots in c(#rows, #columns)
-color = indiv.fs
-par(mfrow = c(1,1),oma=c(0,0,2,0)) 
-plot(c(1:ncol(abatch_stem)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_stem)),sum.PC$rotation[,1], indiv.fs, cex = 0.55, pos=3)   
-for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 0.8, pos=3)   
-}  
-
-#Within individual pearson correlation coefficient
+### Within and across individual pearson correlation coefficient ###
+#iPSCs
+cor <- cor.stem
 cor_2s <- c(cor[1,6],cor[1,12],cor[6,12])
 cor_5s <- c(cor[2,7],cor[2,13],cor[7,13])
 cor_6s <- c(cor[4,8],cor[8,14],cor[4,14]) ## CHANGE TO STEM
@@ -322,7 +376,50 @@ for (i in 1:(nrow(cor_stem)-1)) {
 cor_all_stem
 boxplot(cor_all_stem)
 
-# Euclidean distance within and between indvl of PC projections 1 & 2
+#LCLs
+cor <- cor.lcl
+cor_2l <- c(cor[1,6],cor[1,12],cor[6,12])
+cor_5l <- c(cor[2,7],cor[2,13],cor[7,13])
+cor_6l <- c(cor[3,8],cor[8,14],cor[3,14]) ## Remember lcls diff than stems
+cor_9l <- c(cor[4,9],cor[4,15],cor[9,15]) ## Remember lcls diff than stems
+cor_10l <- c(cor[10,16])
+cor_14l <- c(cor[5,11],cor[5,17],cor[11,17])
+
+cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
+
+cor_wmeans_l <- apply(cor_within_l, 2, mean)
+
+# across individual correlation coefficients
+cor_plus <- cbind(cor, indiv.fl)
+cor_plus <- rbind(cor_plus, indiv.fl)
+cor_plus
+
+cor_lcl <- cor_plus
+cor_all_lcl <- c()
+for (i in 1:(nrow(cor_lcl)-1)) {
+  for (j in 1:(ncol(cor_lcl)-1)) {
+    #print(i)
+    if(cor_lcl[i,18]!= cor_lcl[18,j]) {
+      cor_all_lcl <- c(cor_all_lcl, cor_lcl[i,j])
+    }
+    #else (i==j) {print(i)}
+  }
+}
+cor_all_lcl
+boxplot(cor_all_lcl)
+
+
+#Make distance matrix.
+cor.dist <- as.dist(cor.lcl)
+cor.dist_plus <- cbind(cor.dist, indiv.fl[2:17])
+cor.dist_plus <- rbind(cor.dist_plus, indiv.fl)
+
+##################################################################################################################
+
+### Euclidean distance within and between indvl of PC projections 1 & 2 ####
+
+#stems
+sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
 PC12 <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
 
 # Within Individual
@@ -367,110 +464,13 @@ for (i in 1:(nrow(dist_stem)-1)) {
 dist_all_stem
 mean_dist_all_stem <- mean(dist_all_stem)
 
-##################################################################################################################
-##LCLs
 
-
-cor.lcl <- cor(abatch_lcl,method="pearson", use="complete.obs")
-heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.lcl))),
-          Colv=as.dendrogram(hclust(as.dist(1-cor.lcl))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
-
-cor <- cor(abatch_lcl, method="pearson")
-dis  <- 1-cor
-distance <- as.dist(dis)
-hc <- hclust(distance)
-hc_order <- c(11, 7, 8, 10, 1, 16, 9, 12, 6, 5, 3, 17, 15, 13, 4, 14, 2)
-dhc <- as.dendrogram(hc)
-rhc<- reorder(dhc,hc_order)
-#plot(hc)
-plot(rhc, lty=5, lwd=2)
-plot(hc, lwd = 3, lty = 1, sub = "", hang = -1)
-
-
-#Relationship between PCs and covariates for regressed data
-
-npcs = 4
+# LCLs
 sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
-results<-c()
-for (f in covars.s) {
-  for (i in 1:npcs)
-  {
-    s = summary(lm(sum.PC$rotation[,i]~f));
-    results<-c(results,pf(s$fstatistic[[1]],
-                          s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-               s$adj.r.squared)
-  }
-}
-resultsM_gene_corrected <-matrix(nrow = length(covars), ncol = 2*npcs, data =
-                                   results, byrow = TRUE)
-rownames(resultsM_gene_corrected) = covars_names.l
-colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
-resultsM_gene_corrected
-PC_table_lcl <- resultsM_gene_corrected
-
-
-#PCA plots for regressed data
-sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
-sumsum <- summary(sum.PC)
-op <- par(mfrow = c(3,3), ## split region
-          oma = c(5,0,4,0) + 0.1, ## create outer margin
-          mar = c(5,4,2,2) + 0.1) ## shrink some margins
-tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
-title.PC = "PCA of Gene Expression in lcls"
-
-#prints out plots in c(#rows, #columns)
-color = indiv.fl
-par(mfrow = c(1,1),oma=c(0,0,2,0)) 
-plot(c(1:ncol(abatch_stem)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_stem)),sum.PC$rotation[,1], indiv.fl, cex = 0.55, pos=3)   
-for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=1.5, col=color,pch=20,main=title.PC, xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 0.8, pos=3)   
-}  
-
-
-#Within individual pearson correlation coefficient
-cor_2l <- c(cor[1,6],cor[1,12],cor[6,12])
-cor_5l <- c(cor[2,7],cor[2,13],cor[7,13])
-cor_6l <- c(cor[3,8],cor[8,14],cor[3,14])
-cor_9l <- c(cor[4,9],cor[4,15],cor[9,15])
-cor_10l <- c(cor[10,16])
-cor_14l <- c(cor[5,11],cor[5,17],cor[11,17])
-
-cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
-
-cor_wmeans_l <- apply(cor_within_l, 2, mean)
-# 
-# # across individual correlation coefficients
-# cor_plus <- cbind(cor, indiv.fs)
-# #indiv_plus <- c(indiv.fs, 0)
-# 
-# cor_plus <- rbind(cor_plus, indiv.fs)
-# cor_plus
-
-#Make distance matrix.
-cor.dist <- as.dist(cor.lcl)
-cor.dist_plus <- cbind(cor.dist, indiv.fl[2:17])
-cor.dist_plus <- rbind(cor.dist_plus, indiv.fl)
-
-cor_lcl <- cor_plus
-cor_all_lcl <- c()
-for (i in 1:(nrow(cor_lcl)-1)) {
-  for (j in 1:(ncol(cor_lcl)-1)) {
-    #print(i)
-    if(cor_lcl[i,18]!= cor_lcl[18,j]) {
-      cor_all_lcl <- c(cor_all_lcl, cor_lcl[i,j])
-    }
-    #else (i==j) {print(i)}
-  }
-}
-cor_all_lcl
-boxplot(cor_all_lcl)
-
-# Euclidean distance within and between indvl of PC projections 1 & 2
-dist12_ind <- c()
 PC12_L <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
+
 #Dist by individual
+dist12_ind <- c()
 ind1 <- PC12_L[c(1,6,12),]
 ind2 <- PC12_L[c(2,7,13),]
 ind3 <- PC12_L[c(3,8,14),]
@@ -732,7 +732,7 @@ mean(var_win_lcl)
 mean(var_lcl)
 
 #Do same for stem cells REMEMBER 9 AND 6 ARE SWITCHED SO THESE LABELS AREN'T THE SAME AS LCLS
-expr_stem <- abatch_stem #if you've stored it this way
+expr_stem <- abatch_stem 
 
 var_1s <- apply(expr_stem[,c(1,6,12)],1,var)
 var_2s <- apply(expr_stem[,c(2,7,13)],1,var)
@@ -1128,7 +1128,8 @@ df_all
 t_var
 t_var_rat
 Edist
-
+PC_table_lcl
+PC_table_stem
 #Plots
 hist(adjust_stems)
 hist(adjust_lcls)
