@@ -714,22 +714,15 @@ var_5 <- apply(expr_LCL[,c(10,16)],1,var)
 var_6 <- apply(expr_LCL[,c(5,11,17)],1,var)
 
 var_win_lcl <- cbind(var_1,var_2,var_3,var_4,var_5,var_6)
-var_lcl <- apply(expr_LCL,1,var)
+var_lcl <- apply(expr_LCL,1,var) #calculate variance for each gene across all individuals
 mean_lcl <- apply(expr_LCL, 1, mean)
- plot(mean_lcl, var_lcl)
 
- #Calculate ratio of variance btw and within individuals for every gene
+#Calculate ratio of variance btw to within individuals for every gene
 var_ratio_lcl <- vector()
 for(i in 1:length(var_lcl)) {
   var_ratio_lcl <- c(var_ratio_lcl, (var_lcl[i]/(mean(var_win_lcl[i,]))))  
 }
 length(var_ratio_lcl)
-
-var_l <- cbind(var_win_lcl, var_lcl)
-boxplot(var_l, ylim=c(0,.1))
-t.test(var_win_lcl, var_lcl)
-mean(var_win_lcl)
-mean(var_lcl)
 
 #Do same for stem cells REMEMBER 9 AND 6 ARE SWITCHED SO THESE LABELS AREN'T THE SAME AS LCLS
 expr_stem <- abatch_stem 
@@ -743,56 +736,34 @@ var_6s <- apply(expr_stem[,c(5,11,17)],1,var)
 
 var_win_stem <- cbind(var_1s,var_2s,var_3s,var_4s,var_5s,var_6s)
 var_stem <- apply(expr_stem,1,var) #calculate variance for each gene across all individuals
- 
-#rownames(var_stem) <- rownames(expr_stem)
 mean_stem <- apply(expr_stem, 1, mean)
-log_var_stem <- log10(var_stem)
-log_cv_stem <- log10(CV_S)
-plot(mean_stem, log_cv_stem)
-plot(mean_stem, log_var_stem)
 
-plot(mean_stem, CV_S, ylim=c(0,0.05))
-
-mean_lcl <- apply(expr_LCL, 1, mean)
-l_var_lcl <- log10(var_lcl)
-l_cv_lcl <- log10(var_lcl/mean_lcl)
-plot(mean_lcl, l_cv_lcl)
-plot(mean_lcl, l_var_lcl)
-
-high_expr_lcl <- which(mean_lcl>7)
-length(high_expr_lcl)
-
-high_expr_stem <- which(mean_stem>7)
-length(high_expr_stem)
-
-
-#Calculate ratio of variance btw and within individuals for every gene
+#Calculate ratio of variance btw to within individuals for every gene
 var_ratio_stem <- vector()
 for(i in 1:length(var_stem)) {
   var_ratio_stem <- c(var_ratio_stem, (var_stem[i]/(mean(var_win_stem[i,]))))
 }
 length(var_ratio_stem)
 
-mean(var_stem)
-mean(var_lcl)
-
 
 ## Calculate variance across stem cells and variance across LCLS
 stem_var_rat <- var_ratio_stem
 mean(stem_var_rat)
+
 lcl_var_rat <- var_ratio_lcl
 mean(lcl_var_rat)
+
 t_var_rat <- t.test(stem_var_rat,lcl_var_rat)
 pv_var_rat <- as.character(signif(t_var_rat$p.value, 5)) #round() will give you 0
-pv_var_rat
 
 t_var <- t.test(var_stem, var_lcl)
-t_var
 pv_var <- as.character(signif(t_var$p.value, 5))
 
-## Rank genes
+##################################################################################################################
 
-#Top variable genes
+## Rank genes by variance
+
+#Create dataframe of variance ratios
 stems_list <- data.frame(var_ratio_stem, names(var_ratio_stem))
 lcl_list <- data.frame(var_ratio_lcl, names(var_ratio_lcl))
 
@@ -800,11 +771,11 @@ lcl_list <- data.frame(var_ratio_lcl, names(var_ratio_lcl))
 ordereds<- stems_list[order(stems_list[,1]),]
 orderedl<- lcl_list[order(lcl_list[,1]),]  
 
-#Reverse order
+#Reverse order: top is most variable
 rordereds<- stems_list[order(stems_list[,1], decreasing=TRUE),]
 rorderedl<- lcl_list[order(lcl_list[,1], decreasing=TRUE),]  
 
-# Order by variance ratio. Plot expression by individual CHANGE INDIVIDUAL IDENTIFIERS!!!!
+#Plot expression by individual for most highly variable genes
 
 stem_bind <- data.frame(expr_stem, var_ratio_stem)
 ordered_stem_bind <- stem_bind[order(stem_bind[,18], decreasing=TRUE),]
@@ -859,18 +830,19 @@ hist(adjust_lcls)
 sig_stems <- length(adjust_stems[adjust_stems<.05])
 sig_lcls <- length(adjust_lcls[adjust_lcls<.05])
 
-#Set significance cutoff for plot
+#Set significance cutoff for plot by averaging the ratio that corresponds with significance in both cell types
 cutoff_stems <- rordereds[sig_stems,]
 cutoff_lcls <- rorderedl[sig_lcls,]
 cutoff_avg <- mean(c(cutoff_stems[,1], cutoff_lcls[,1]))
 
-#Subset top and bottom
+#Subset list by genes with variance significantly associated with individual. 
 bottom_stem <- rordereds[c(1:sig_stems),]
 bottom_lcl <- rorderedl[c(1:sig_lcls),]
 bottom_stemnames <- row.names(bottom_stem)
 bottom_lclnames <- row.names(bottom_lcl)
 names_all <- row.names(abatch_all)
 
+#Plot mean expression of genes that are significantly associated with individual in iPSCs (in both cell types)
 expr_LCL_highstem <- expr_LCL[rownames(expr_LCL) %in% bottom_stemnames,]
 expr_LCL_hs_mean <- apply(expr_LCL_highstem, 1, mean)
 expr_LCL_mean <- apply(expr_LCL, 1, mean)
@@ -900,21 +872,18 @@ gg_color_hue <- function(n) {
 cols = gg_color_hue(2)
 
 #Ratio
-#pretty <- c("palevioletred2", "royalblue2")
+#pretty_R <- c("palevioletred2", "royalblue2")
 var_all <- data.frame(var=c(stem_var_rat, lcl_var_rat), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("2", "1"), times=c(length(stem_var_rat),length(lcl_var_rat))))
-#var_all <- data.frame(var=c(lcl_var_rat, stem_var_rat), type = rep(c("LCL", "iPSC"), times=c(length(lcl_var_rat),length(stem_var_rat))))
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(legend.position=c(.75,.75), legend.title=element_blank(), axis.title=element_text(size=14), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=6, y=.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
 
 #Absolute
-
-#pretty <- rev(pretty)
-# var_all <- data.frame(var=c(var_lcl, var_stem), type = rep(c("LCL", "Stem"), times=c(length(lcl_var_rat),length(stem_var_rat))))
 var_all <- data.frame(var=c(var_stem, var_lcl), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("1", "2"), times=c(length(stem_var_rat),length(lcl_var_rat))))
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white'), axis.title=element_text(size=14)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 
 
 ##################################################################################################################
 #eQTL enrichment
+
 library(plyr)
 ## Summarizes data.
 ## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
@@ -960,11 +929,10 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 }
 
 ## LCL eQTLs only
-eQTL_lcls <- read.table(c("eQTLs lcls.tab"), fill=TRUE)
+# eQTL_lcls <- read.table(c("eQTLs lcls.tab"), fill=TRUE) #from ncbi website.
 eQTL_lcls <- read.table(c("pritch_final_eqtl_list.txt"))
 eQTL_lcls <- unique(eQTL_lcls[,1])
 eQTL_lcls 
-
 length(eQTL_lcls)
 
 lcls_stems <- ordereds[rownames(ordereds) %in% eQTL_lcls,]
@@ -977,20 +945,12 @@ elcl_stemvar <- var_stem[names(var_stem) %in% eQTL_lcls]
 cv_elcl_stem <- CV_S[names(CV_S) %in% eQTL_lcls]
 length(elcl_stemvar)
 length(cv_elcl_stem)
-mean(cv_elcl_stem)
 
 elcl_lclvar <- var_lcl[names(var_lcl) %in% eQTL_lcls]
 cv_elcl_lcl <- CV_L[names(CV_L) %in% eQTL_lcls]
 length(elcl_lclvar)
 length(cv_elcl_lcl)
-mean(cv_elcl_lcl)
-mean(cv_elcl_stem)
-mean(CV_L)
-mean(CV_S)
-mean(elcl_lclvar)
-mean(elcl_stemvar)
-mean(var_stem)
-mean(var_lcl)
+
 cv_nelcl_stem <- CV_S[!(names(CV_S) %in% eQTL_lcls)]
 cv_nelcl_lcl <- CV_L[!(names(CV_L) %in% eQTL_lcls)]
 
@@ -1003,9 +963,9 @@ elcl_stem_mean <- apply(elcl_stem_expr, 1, mean)
 names_elcl_means <-  c("lcl mean eQTL genes", "ipsc mean eQTL genes")
 elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
 boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
-
 t.test(elcl_lcl_mean, elcl_stem_mean)
 
+##################################################################################################################
 
 #Plot Variance
 dodge <- position_dodge(width=0.9)
@@ -1065,8 +1025,8 @@ expr_lcl_mean_eqtl <- apply(expr_eqtl_lcls, 1, mean)
 expr_nmeans <- c(expr_stem_mean_eqtl,expr_lcl_mean_eqtl, expr_stem_mean_neqtl, expr_lcl_mean_neqtl)
 df_nmean <- data.frame(expr_nmeans, names_var, type_var)
 ggplot(df_nmean, aes(type_var,expr_nmeans, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
-t.test(expr_stem_mean_eqtl, expr_lcl_mean_eqtl)
 
+t.test(expr_stem_mean_eqtl, expr_lcl_mean_eqtl)
 t.test(elcl_stemvar, elcl_lclvar)
 t.test(elcl_stemvar, var_stem)
 t.test(CV_S, CV_L)
