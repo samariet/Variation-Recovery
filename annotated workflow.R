@@ -219,7 +219,6 @@ distance <- as.dist(dis)
 hc <- hclust(distance)
 hc <- as.dendrogram(hc)
 color <- indiv.fb
-plot(hc, nodePar = list(col =c("red", "green")))
 plot(hc, main = "Cluster Dendrogram: Both Cell types", cex.main = 1.5 , nodePar = list(pch = c(1,NA), cex = 0.8, col=indiv.fb), col = "#487AA1", col.main = "#45ADA8", col.lab = "lightcoral", col.axis = "#F38630", lwd = 3, lty = 1, sub = "", hang = -1, axes = FALSE)
 axis(side = 2, at = seq(0.0, 1.4, .2), col = "#F38630", labels = FALSE, lwd = 2)
 # add text in margin
@@ -227,35 +226,30 @@ mtext(seq(0, 1.4, .2), side = 2, at = seq(0, 1.4, .2), line = 1, col = "#A38630"
 
 
 
-#Now prep for separate analysis in iPSCs and LCLs by splitting the dataset.
-abatch_bind <- rbind(abatch_all, type.fb)
-dim(abatch_bind)
-abatch_stem <- abatch_bind[,c(type.fb=="i")]
-abatch_stem <- abatch_stem[-nrow(abatch_stem),]
+#Split iPSCs and LCLs into separate objects
+abatch_stem <- abatch_all[,c(type.fb=="i")]
 dim(abatch_stem)
-abatch_lcl<- abatch_bind[,c(type.fb=="L")]
-abatch_lcl <- abatch_lcl[-nrow(abatch_lcl),]
+abatch_lcl<- abatch_all[,c(type.fb=="L")]
 dim(abatch_lcl)
 
 
-###############################################################################################################
-# Stems Analysis
-
-#Heatmap
+#Heatmaps
 cor.stem <- cor(abatch_stem,method="pearson", use="complete.obs")
 heatmap.2(cor.stem, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
+cor.lcl <- cor(abatch_lcl,method="pearson", use="complete.obs")
+heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
+          Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
+
 #Dendrogram
 
-cor <- cor(abatch_stem, method="pearson")
-dis  <- 1-cor
+dis  <- 1-cor.stem
 distance <- as.dist(dis)
 hc <- hclust(distance)
-plot(hc)
 dhc <- as.dendrogram(hc)
 plot(dhc)
-plot(hc, lwd = 3, lty = 1, sub = "", hang = -1)
+plot(hc, lwd = 2, lty = 1, sub = "", hang = -1)
 
 #Relationship between PCs and covariates for regressed data
 npcs = 4
@@ -275,7 +269,7 @@ resultsM_gene_corrected <-matrix(nrow = length(covars), ncol = 2*npcs, data =
 rownames(resultsM_gene_corrected) = covars_names.s
 colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
 resultsM_gene_corrected
-PC_table_stem <- resultsM_gene_corrected
+PC_table_stem <- resultsM_gene_correctde
 
 
 #PCA plots for regressed data
@@ -446,13 +440,18 @@ cor_14l <- c(cor[5,11],cor[5,17],cor[11,17])
 cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
 
 cor_wmeans_l <- apply(cor_within_l, 2, mean)
+# 
+# # across individual correlation coefficients
+# cor_plus <- cbind(cor, indiv.fs)
+# #indiv_plus <- c(indiv.fs, 0)
+# 
+# cor_plus <- rbind(cor_plus, indiv.fs)
+# cor_plus
 
-# across individual correlation coefficients
-cor_plus <- cbind(cor, indiv.fs)
-#indiv_plus <- c(indiv.fs, 0)
-
-cor_plus <- rbind(cor_plus, indiv.fs)
-cor_plus
+#Make distance matrix.
+cor.dist <- as.dist(cor.lcl)
+cor.dist_plus <- cbind(cor.dist, indiv.fl[2:17])
+cor.dist_plus <- rbind(cor.dist_plus, indiv.fl)
 
 cor_lcl <- cor_plus
 cor_all_lcl <- c()
@@ -630,6 +629,7 @@ mean(CV_L)
 t.test(CV_S, CV_L)
 
 ## Calculate CV between individuals ##
+
 # Pick a random line from each individual
 df_astem <- data.frame(rbind(abatch_stem, ID.fs))
 df_s1 <- df_astem[,(indiv.fs==1)]
@@ -805,8 +805,6 @@ rordereds<- stems_list[order(stems_list[,1], decreasing=TRUE),]
 rorderedl<- lcl_list[order(lcl_list[,1], decreasing=TRUE),]  
 
 # Order by variance ratio. Plot expression by individual CHANGE INDIVIDUAL IDENTIFIERS!!!!
-
-color=indiv.fs
 
 stem_bind <- data.frame(expr_stem, var_ratio_stem)
 ordered_stem_bind <- stem_bind[order(stem_bind[,18], decreasing=TRUE),]
