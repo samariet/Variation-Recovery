@@ -346,10 +346,12 @@ PC_table_lcl <- resultsM_gene_corrected_lcl
 ### Within and across individual pearson correlation coefficient ###
 #iPSCs
 cor <- cor.stem
+
+#Within individual
 cor_2s <- c(cor[1,6],cor[1,12],cor[6,12])
 cor_5s <- c(cor[2,7],cor[2,13],cor[7,13])
-cor_6s <- c(cor[4,8],cor[8,14],cor[4,14]) ## CHANGE TO STEM
-cor_9s <- c(cor[3,9],cor[3,15],cor[9,15]) ## CHANGE TO STEM
+cor_6s <- c(cor[4,8],cor[8,14],cor[4,14]) 
+cor_9s <- c(cor[3,9],cor[3,15],cor[9,15]) 
 cor_10s <- c(cor[10,16])
 cor_14s <- c(cor[5,11],cor[5,17],cor[11,17])
 
@@ -357,20 +359,21 @@ cor_within_s <- qpcR:::cbind.na(cor_2s,cor_5s,cor_6s,cor_9s,cor_10s,cor_14s)
 
 cor_wmeans_s <- apply(cor_within_s, 2, mean)
 
-# across individual correlation coefficients
+#Across Individual
 cor_plus <- cbind(cor, indiv.fs)
 cor_plus <- rbind(cor_plus, indiv.fs)
 cor_plus
 
+#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
 cor_stem <- cor_plus
 cor_all_stem <- c()
 for (i in 1:(nrow(cor_stem)-1)) {
   for (j in 1:(ncol(cor_stem)-1)) {
-    #print(i)
     if(cor_stem[i,18]!= cor_stem[18,j]) {
+      if(j>i) {
       cor_all_stem <- c(cor_all_stem, cor_stem[i,j])
+      }
     }
-    #else (i==j) {print(i)}
   }
 }
 cor_all_stem
@@ -378,6 +381,8 @@ boxplot(cor_all_stem)
 
 #LCLs
 cor <- cor.lcl
+
+#Within Individuals
 cor_2l <- c(cor[1,6],cor[1,12],cor[6,12])
 cor_5l <- c(cor[2,7],cor[2,13],cor[7,13])
 cor_6l <- c(cor[3,8],cor[8,14],cor[3,14]) ## Remember lcls diff than stems
@@ -389,36 +394,33 @@ cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
 
 cor_wmeans_l <- apply(cor_within_l, 2, mean)
 
-# across individual correlation coefficients
+#Across Individuals
 cor_plus <- cbind(cor, indiv.fl)
 cor_plus <- rbind(cor_plus, indiv.fl)
 cor_plus
 
+#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
 cor_lcl <- cor_plus
 cor_all_lcl <- c()
 for (i in 1:(nrow(cor_lcl)-1)) {
   for (j in 1:(ncol(cor_lcl)-1)) {
-    #print(i)
     if(cor_lcl[i,18]!= cor_lcl[18,j]) {
+      if(j>i) {
       cor_all_lcl <- c(cor_all_lcl, cor_lcl[i,j])
+      }
     }
-    #else (i==j) {print(i)}
   }
 }
 cor_all_lcl
 boxplot(cor_all_lcl)
 
 
-#Make distance matrix.
-cor.dist <- as.dist(cor.lcl)
-cor.dist_plus <- cbind(cor.dist, indiv.fl[2:17])
-cor.dist_plus <- rbind(cor.dist_plus, indiv.fl)
 
 ##################################################################################################################
 
-### Euclidean distance within and between indvl of PC projections 1 & 2 ####
+### Euclidean distance within and between indvl of PC projections 1 & 2 ###
 
-#stems
+#Stems
 sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
 PC12 <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
 
@@ -454,9 +456,10 @@ dist_stem <- dist_plus
 dist_all_stem <- c()
 for (i in 1:(nrow(dist_stem)-1)) {
   for (j in 1:(ncol(dist_stem)-1)) {
-    #print(i)
+    if(j>i) {
     if(dist_stem[i,18]!= dist_stem[18,j]) {
       dist_all_stem <- c(dist_all_stem, dist_stem[i,j])
+    }
     }
     else {print(i)}
   }
@@ -501,9 +504,10 @@ dist_lcl <- dist_plus_L
 dist_all_lcl <- c()
 for (i in 1:(nrow(dist_lcl)-1)) {
   for (j in 1:(ncol(dist_lcl)-1)) {
-    #print(i)
     if(dist_lcl[i,18]!= dist_lcl[18,j]) {
+      if(j>i) {
       dist_all_lcl <- c(dist_all_lcl, dist_lcl[i,j])
+      }
     }
     else {print(i)}
   }
@@ -1074,6 +1078,7 @@ telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
 telcl_svsl <- t.test(cv_elcl_stem, cv_elcl_lcl)
 t_varexpl <- t.test(resultsM[,2], resultsM_s[,2])
 t_varexpl
+explained_avg
 
 names <- c("Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl vs ipsc variance explained by donor", 
            "p-value for lcl eqtls vs all genes in lcls", "p-value for lcl eqtls vs all genes in ipscs",
