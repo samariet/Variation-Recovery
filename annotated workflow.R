@@ -76,16 +76,16 @@ extr_date.f = as.factor(extr_date)
 rmsd.f <- as.factor(RMSD)
 
 #Subset stem cells and put your covariates in a list
-name.fb =name.f[both]
-indiv.fb = indiv.f[both]
-type.fb <- as.factor(type.f[both])
-ID.fb <- ID.f[both]
-repr_batch.fb <- repr_batch.f[both]
-array_batch.fb <- array_batch.f[both]
-gender.fb <- gender.f[both]
-extr_batch.fb <- extr_batch.f[both]
-extr_date.fb <- extr_date.f[both]
-rmsd.fb <- rmsd.f[both]
+name.fb =factor(name.f[both])
+indiv.fb = factor(indiv.f[both])
+type.fb <- factor(type.f[both])
+ID.fb <- factor(ID.f[both])
+repr_batch.fb <- factor(repr_batch.f[both])
+array_batch.fb <- factor(array_batch.f[both])
+gender.fb <- factor(gender.f[both])
+extr_batch.fb <- factor(extr_batch.f[both])
+extr_date.fb <- factor(extr_date.f[both])
+rmsd.fb <- factor(rmsd.f[both])
 covars<-list(array_batch.fb,indiv.fb,gender.fb,extr_date.fb,extr_batch.fb) #leave out repr batch for lcls, will bug later
 covars_names <- factor(c("array_batch.fb","indiv.fb","gender.fb","extr_date.fb","extr_batch.fb"))
 
@@ -542,7 +542,7 @@ mean_dist_all_lcl <- mean(dist_all_lcl)
 
 design <- model.matrix(~0+type.fb)
 
-colnames(design) <- c("heart", "iPSC", "LCL")
+colnames(design) <- c("iPSC", "LCL")
 
 fit <- lmFit(abatch_all, design)
 
@@ -829,6 +829,7 @@ pvals_stems <- c()
 for (i in 1:nrow(abatch_stem)) {
   s <- summary(lm(abatch_stem[i,]~indiv.fs));
   pvals_stems <- c(pvals_stems,pf(s$fstatistic[[1]], s$fstatistic[[2]], s$fstatistic[[3]], lower.tail = FALSE))
+  names(pvals_stems[i])==rownames(abatch_stem)[i]
 }
 
 pvals_lcls <- c()
@@ -1113,6 +1114,9 @@ explained_avg <- c(exp_l, exp_s)
 DS1 <- read.table("TableS3.txt")
 df_s1 <- c(names(expr_))
 
+#is cv related to association with individual?
+
+
 ####################################################################################################################################################################
 
 # Consolidate numbers you'll use in paper.
@@ -1149,7 +1153,7 @@ leg_pos <- c(.47, .55)
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.045, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(panel.border = element_rect(color="black", fill=NA), axis.line.y=element_line(color="black"), axis.text=element_text(face="bold", size=18), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'), axis.title=element_text(size=18),axis.title.y=element_text(vjust=1.2), axis.title.x = element_text(vjust=-.35)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 leg_pos <- c(.55, .55)
 ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.position=c(.75,.75), legend.title=element_blank(), axis.title=element_text(size=18), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=4.5, y=.75) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
-ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(panel.grid.major = element_blank(), panel.grid.minor= element_blank(), text = element_text(size=18, face="bold")) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
+ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(panel.grid.major = element_blank(), panel.grid.minor= element_blank(), text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("pearson correlation coefficient") + theme(axis.title.y = element_text(size=18, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
 leg_pos <- c(.07,.9)
 ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title=element_text(size=18, face="plain"), legend.background=element_rect(fill="transparent"),panel.border=element_rect(color="black", fill=NA),legend.position = leg_pos, text = element_text(size=18, face="bold"), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
