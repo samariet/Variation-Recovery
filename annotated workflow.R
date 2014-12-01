@@ -552,6 +552,12 @@ fit2<-contrasts.fit(fit,contrast.matrix)
 
 fit2<-eBayes(fit2)
 
+pv_list <- fit2$p.value
+output_all <- topTable(fit2, number=20000, sort.by="none")
+dim(output_all)
+pv_list_raw <- output_all[,4, drop=FALSE]
+pv_list_adj <- output_all[,5, drop=FALSE]
+
 output <- topTable(fit2, number=20000, p.value=.01)
 
 adjust <- output[,5]
@@ -824,19 +830,21 @@ for(i in 1:2) {
 #Gene by gene: variane attributable to individual?
 
 #pvalues for each gene association with factor individual
+gene_names <- rownames(abatch_all)
 
 pvals_stems <- c()
 for (i in 1:nrow(abatch_stem)) {
   s <- summary(lm(abatch_stem[i,]~indiv.fs));
   pvals_stems <- c(pvals_stems,pf(s$fstatistic[[1]], s$fstatistic[[2]], s$fstatistic[[3]], lower.tail = FALSE))
-  names(pvals_stems[i])==rownames(abatch_stem)[i]
 }
+names(pvals_stems)=gene_names
 
 pvals_lcls <- c()
 for (i in 1:nrow(abatch_lcl)) {
   s <- summary(lm(abatch_lcl[i,]~indiv.fl));
   pvals_lcls <- c(pvals_lcls,pf(s$fstatistic[[1]], s$fstatistic[[2]], s$fstatistic[[3]], lower.tail = FALSE))
 }
+names(pvals_lcls)=gene_names
 
 hist(pvals_stems)
 hist(pvals_lcls)
@@ -877,6 +885,8 @@ expr_stem_mean <- apply(expr_stem, 1, mean)
 
 length(expr_LCL_hs_mean)
 boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
+t.test(expr_stem_hs_mean, expr_LCL_hs_mean)
+t.test(expr_LCL_mean, expr_stem_mean)
 
 #Overlap of top and bottom between cell types
 overlap <- intersect(tops[,2], topl[,2])
@@ -1010,6 +1020,14 @@ elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
 boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
 t.test(elcl_lcl_mean, elcl_stem_mean)
 
+############################
+lcl_lcl <- bottom_lcl[bottom_lcl[,2] %in% eQTL_lcls,]
+lcl_stem <- bottom_stem[bottom_stem[,2] %in% eQTL_lcls,]
+dim(lcl_lcl)
+dim(lcl_stem)
+dim(bottom_lcl)
+dim(bottom_stem)
+
 ####################################################################################################################################################################
 
 #Plot Variance
@@ -1112,8 +1130,11 @@ explained_avg <- c(exp_l, exp_s)
 ####################################################################################################################################################################
 #Supp table 1
 DS1 <- read.table("TableS3.txt")
-df_s1 <- c(names(expr_))
 
+for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_lcls) 
+
+#write.table(for_s1, "C:/Users/a a/Documents/Lab/Variation Recovery/s1.txt", sep="\t",quote=F) # you'll need to adjust column names
+# the x's in column name are because R had to change characters it didn't like.
 #is cv related to association with individual?
 
 
