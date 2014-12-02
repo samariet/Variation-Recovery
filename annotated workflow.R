@@ -241,12 +241,12 @@ SOX2s <- abatch_stem[grep("SOX2", rownames(abatch_stem)),]
 plot(SOX2s[2,])
 SOX2l <- abatch_lcl[grep("SOX2", rownames(abatch_lcl)),]
 plot(SOX2l[2,])
-nanogs <- abatch_stem[grep("POU5", rownames(abatch_stem)),,drop=FALSE]
-nanogs
-plot(nanogs)
-nanogl <- abatch_lcl[grep("POU5", rownames(abatch_lcl)),]
-nanogl
-plot(nanogl)
+octs <- abatch_stem[grep("POU5", rownames(abatch_stem)),,drop=FALSE]
+octs
+plot(octs)
+octl <- abatch_lcl[grep("POU5", rownames(abatch_lcl)),]
+octl
+plot(octl)
 ####################################################################################################################################################################
 
 #Heatmaps
@@ -625,10 +625,12 @@ boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for
 
 cor_all_6s <- sample(cor_all_stem, 6)
 cor_all_6l <- sample(cor_all_lcl, 6)
+cor_all_stem <- cor_all_6s
+cor_all_lcl <- cor_all_6l
 t.test(cor_all_6s, cor_all_6l)
 
-cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
-cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
+cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_6s, cor_all_6l)
+cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_6s, cor_all_6l)
 cor_within_l.long <- c(as.vector(cor_within_l), rep(NA, length(cor_all_lcl)-length(cor_within_l)))
 cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-length(cor_within_s)))
 cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
@@ -650,7 +652,7 @@ pv_w
 t_cor_wmean <- t.test(cor_wmeanl, cor_wmeans)
 pv_wm <- signif(t_cor_wmean$p.value, 1)
 pv_wm
-t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
+t_cor_b <- t.test(cor_all_6l, cor_all_6s)
 pv_b <- signif(t_cor_b$p.value, 1)
 pv_b
 
