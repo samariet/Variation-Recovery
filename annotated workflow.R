@@ -162,7 +162,7 @@ expr_genes <- expr_stem
 # Convert probe IDs to gene names using Darren's file (has HGNC & ensembl)
 gene_names=c()
 for(i in 1:dim(expr_stem)[1]){ 
-  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],7])) #creates a list of gene names the same length as expression data
+  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],8])) #creates a list of gene names the same length as expression data
 }
 rownames(expr_genes)=gene_names
 Unique_genes = unique(rownames(expr_genes))
@@ -212,6 +212,10 @@ cor.abatch.int.g <- cor(abatch_all,method="pearson", use="complete.obs")
 heatmap.2(cor.abatch.int.g, Rowv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
+genes <- rownames(abatch_all)
+SOX2 <- abatch_all[grep("SOX2", rownames(abatch_all)),]
+SOX2
+plot(SOX2[2,])
 
 #Making dendrograms
 cor <- cor(abatch_all, method="pearson")
@@ -233,6 +237,16 @@ dim(abatch_stem)
 abatch_lcl<- abatch_all[,c(type.fb=="L")]
 dim(abatch_lcl)
 
+SOX2s <- abatch_stem[grep("SOX2", rownames(abatch_stem)),]
+plot(SOX2s[2,])
+SOX2l <- abatch_lcl[grep("SOX2", rownames(abatch_lcl)),]
+plot(SOX2l[2,])
+nanogs <- abatch_stem[grep("POU5", rownames(abatch_stem)),,drop=FALSE]
+nanogs
+plot(nanogs)
+nanogl <- abatch_lcl[grep("POU5", rownames(abatch_lcl)),]
+nanogl
+plot(nanogl)
 ####################################################################################################################################################################
 
 #Heatmaps
@@ -608,6 +622,10 @@ cor_all_both <- cbind(cor_all_lcl, cor_all_stem)
 boxplot(cor_all_both)
 boxplot(cor_both)
 boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for Stem cells and LCLs")
+
+cor_all_6s <- sample(cor_all_stem, 6)
+cor_all_6l <- sample(cor_all_lcl, 6)
+t.test(cor_all_6s, cor_all_6l)
 
 cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
 cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
@@ -1170,7 +1188,7 @@ hist(adjust_lcls)
 plot(dhc.s)
 plot(dhc)
 
-leg_pos <- c(.47, .55)
+leg_pos <- c(.49, .55)
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.045, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(panel.border = element_rect(color="black", fill=NA), axis.line.y=element_line(color="black"), axis.text=element_text(face="bold", size=18), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'), axis.title=element_text(size=18),axis.title.y=element_text(vjust=1.2), axis.title.x = element_text(vjust=-.35)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 leg_pos <- c(.55, .55)
 ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.position=c(.75,.75), legend.title=element_blank(), axis.title=element_text(size=18), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=4.5, y=.75) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
