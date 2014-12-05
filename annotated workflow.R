@@ -162,7 +162,7 @@ expr_genes <- expr_stem
 # Convert probe IDs to gene names using Darren's file (has HGNC & ensembl)
 gene_names=c()
 for(i in 1:dim(expr_stem)[1]){ 
-  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],8])) #creates a list of gene names the same length as expression data
+  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],7])) #creates a list of gene names the same length as expression data
 }
 rownames(expr_genes)=gene_names
 Unique_genes = unique(rownames(expr_genes))
@@ -625,12 +625,12 @@ boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for
 
 cor_all_6s <- sample(cor_all_stem, 6)
 cor_all_6l <- sample(cor_all_lcl, 6)
-cor_all_stem <- cor_all_6s
-cor_all_lcl <- cor_all_6l
+#cor_all_stem <- cor_all_6s
+#or_all_lcl <- cor_all_6l
 t.test(cor_all_6s, cor_all_6l)
 
-cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_6s, cor_all_6l)
-cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_6s, cor_all_6l)
+cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
+cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
 cor_within_l.long <- c(as.vector(cor_within_l), rep(NA, length(cor_all_lcl)-length(cor_within_l)))
 cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-length(cor_within_s)))
 cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
@@ -645,6 +645,7 @@ t.test(cor_within_s, cor_all_stem)
 t.test(cor_wmeanl, cor_all_lcl)
 t.test(cor_wmeans, cor_all_stem)
 
+t_cor_a <- t.test(cor_all_lcl, cor_all_stem)
 t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l))
 t_cor_w
 pv_w <- signif(t_cor_w$p.value,1)
@@ -652,7 +653,7 @@ pv_w
 t_cor_wmean <- t.test(cor_wmeanl, cor_wmeans)
 pv_wm <- signif(t_cor_wmean$p.value, 1)
 pv_wm
-t_cor_b <- t.test(cor_all_6l, cor_all_6s)
+t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
 pv_b <- signif(t_cor_b$p.value, 1)
 pv_b
 
@@ -1040,13 +1041,18 @@ elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
 boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
 t.test(elcl_lcl_mean, elcl_stem_mean)
 
-############################
+################################################################################################################
+# Fraction of genes with eQTLs in highly variable gene lists
+
 lcl_lcl <- bottom_lcl[bottom_lcl[,2] %in% eQTL_lcls,]
 lcl_stem <- bottom_stem[bottom_stem[,2] %in% eQTL_lcls,]
 dim(lcl_lcl)
 dim(lcl_stem)
 dim(bottom_lcl)
 dim(bottom_stem)
+
+fraction_hvlcl_elcl <- nrow(lcl_lcl) / nrow(bottom_lcl)
+fraction_hvstem_elcl <- nrow(lcl_stem) / nrow(bottom_stem)
 
 ####################################################################################################################################################################
 
@@ -1169,11 +1175,19 @@ t_varexpl
 
 names <- c("Number of Differentially Expressed Genes", "Variance Explained in LCLs by individual", "Variance explained in iPSCs by individual", "p-value for lcl vs ipsc variance explained by donor", 
            "p-value for lcl eqtls vs all genes in lcls", "p-value for lcl eqtls vs all genes in ipscs",
-           "p-value for lcl eqtls in stems vs ipscs",
+           "p-value for lcl eqtls in LCLs vs ipscs",
            "Number of genes associated with donor: LCLs", "Number of genes associated with donor: iPSCs",
            "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types",
-           "number of differentially expressed genes FDR<0.01")
-con_all <- c(length(adjust), exp_l, exp_s, t_varexpl$p.value,  telcl_lcl$p.value, telcl_stem$p.value, telcl_svsl$p.value,sig_lcls, sig_stems, pv_wm, pv_b, length(adjust))
+           "number of differentially expressed genes FDR<0.01",
+           "number of expressed genes",
+           "fraction of donor effect genes in stem cells w/ elcl",
+           "fraction of donor effect genes in lcls w/ elcl",
+           "p-value correlation between: iPSCs vs LCLs",
+           "p-value correlation within: iPSCs vs LCLs")
+con_all <- c(length(adjust), exp_l, exp_s, t_varexpl$p.value,  
+             telcl_lcl$p.value, telcl_stem$p.value, telcl_svsl$p.value,sig_lcls, 
+             sig_stems, pv_wm, pv_b, length(adjust), nrow(abatch_all),
+             fraction_hvlcl_elcl, fraction_hvstem_elcl, pv_b, pv_w)
 df_all <- data.frame(names, con_all)
 df_all
 
