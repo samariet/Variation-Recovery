@@ -117,11 +117,26 @@ rmsd.fl <- rmsd.f[lcls]
 covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
 covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
 
+
+##Consider which probes are detected in the two cell types.
+colnames(data.lumi) = samplenames[both,1]
+detect <- data.lumi@assayData$detection
+detect_LCL <- detect[,grep("LCL", colnames(detect))]
+detect_stem <- detect[,grep("iPSC", colnames(detect))]
+
+stem_detected <-rowSums(detect_stem < 0.05) 
+LCL_detected <- rowSums(detect_LCL < 0.05)
+
+detect.stem <- which(stem_detected >2)
+detect.lcl <- which(LCL_detected>2)
+
 #Take only the probes that have a detection p-value<.05 in at least two replicates
 detect_quant.all= rowSums(data.lumi@assayData$detection<0.05) #47,311
 detect.ind.all <- which(detect_quant.all > 1) #31,945
 data.lumi <- data.lumi[detect.ind.all,]
 
+#data.lumi <- data.lumi[detect.lcl,]
+#data.lumi <- data.lumi[detect.stem,]
 ###Find the column that is lumi_ID in feature data usually column 1
 head(data.lumi@featureData[[5]]) ## Should read: [1] "ILMN_1762337" "ILMN_2055271" "ILMN_1736007" "ILMN_2383229" "ILMN_1806310" "ILMN_1779670"....
 
