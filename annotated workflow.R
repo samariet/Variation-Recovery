@@ -75,7 +75,7 @@ extr_batch.f = as.factor(extr_batch)
 extr_date.f = as.factor(extr_date)
 rmsd.f <- as.factor(RMSD)
 
-#Subset stem cells and put your covariates in a list
+#Remove hearts and put your covariates in a list
 name.fb =factor(name.f[both])
 indiv.fb = factor(indiv.f[both])
 type.fb <- factor(type.f[both])
@@ -117,7 +117,7 @@ rmsd.fl <- rmsd.f[lcls]
 covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
 covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
 
-#Take only the probes that have a detection p-value<.05 in at least one replicate
+#Take only the probes that have a detection p-value<.05 in at least two replicates
 detect_quant.all= rowSums(data.lumi@assayData$detection<0.05) #47,311
 detect.ind.all <- which(detect_quant.all > 1) #31,945
 data.lumi <- data.lumi[detect.ind.all,]
@@ -128,7 +128,7 @@ head(data.lumi@featureData[[5]]) ## Should read: [1] "ILMN_1762337" "ILMN_205527
 ###Subset expression by probes with no CEU Hapmap SNPs.
 goodprobes= read.table('HT-12v4_Probes_inhg19EnsemblGenes_NoCEUHapMapSNPs_Stranded.txt', header=T)
 probes = goodprobes$probeID
-probes = as.character(goodprobes$probeID) ## Convert from factor to character
+probes = as.character(goodprobes$probeID) ## Convert from factor to character to subset data.lumi
 data.lumi.clean = data.lumi[data.lumi@featureData[[5]] %in% probes, ] #featureData[[5]] should be probe names... Goes from 31,945 to 20,224
 
 
@@ -147,22 +147,20 @@ colnames(expr_quant.all) = samplenames[(both),1]
 
 #Subtract out mean. Make sure this is what you want to do.
 
-expr_stem <- expr_quant.all
-dim(expr_stem)
-expr_stem_s <- expr_stem[,c(type.fb=="i")]
+dim(expr_quant.all)
+expr_stem_s <- expr_quant.all[,c(type.fb=="i")]
 dim(expr_stem_s)
-expr_stem_l <- expr_stem[,c(type.fb=="L")]
-dim(expr_stem_l)
+expr_lcl_l <- expr_quant.all[,c(type.fb=="L")]
+dim(expr_lcl_l)
 
 ####################################################################################################################
 ## This next section subsets your data to include only 1 probe per gene.The 3' most probe. 
-#expr_stem <- expr_stem[-nrow(expr_stem),]
-expr_genes <- expr_stem
+expr_genes <- expr_quant.all
 
 # Convert probe IDs to gene names using Darren's file (has HGNC & ensembl)
 gene_names=c()
-for(i in 1:dim(expr_stem)[1]){ 
-  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_stem)[i],7])) #creates a list of gene names the same length as expression data
+for(i in 1:dim(expr_quant.all)[1]){ 
+  gene_names=c(gene_names,as.vector(goodprobes[as.vector(goodprobes[,4])==row.names(expr_quant.all)[i],7])) #creates a list of gene names the same length as included probes
 }
 rownames(expr_genes)=gene_names
 Unique_genes = unique(rownames(expr_genes))
@@ -194,7 +192,7 @@ for(gene in unique(gene_names)){
     keepRow=currRows[1]
     f=f+1
   }
-  expr_gene[i,] = expr_stem[keepRow,]
+  expr_gene[i,] = expr_quant.all[keepRow,]
   
 } 
 d #1952 + strand multiple probes
@@ -203,7 +201,7 @@ f #11531= single probe
 
 dim(expr_gene) #From 20224 probes to 15306 genes
 rownames(expr_gene) = Unique_genes
-colnames(expr_gene) = colnames(expr_stem)
+colnames(expr_gene) = colnames(expr_quant.all)
 
 
 #Regress out arrray
@@ -675,6 +673,15 @@ CV_S <- apply(abatch_stem, 1, cv)
 CV_L <- apply(abatch_lcl, 1, cv)
 t.test(CV_S, CV_L)
 
+mean_S <- apply(abatch_stem, 1, mean)
+mean_L <- apply(abatch_lcl, 1, mean)
+
+plot(log(CV_S), mean_S)
+plot(var_lcl, mean_L)
+
+plot(mean_S, log(CV_S))
+plot(mean_S, log(var_stem))
+
 ## Calculate CV between individuals ##
 
 # Pick a random line from each individual
@@ -731,6 +738,7 @@ length(high_CVL)
 high_CVLS <- intersect(names(high_CVS), names(high_CVL))
 head(high_CVLS)
 length(high_CVLS)
+
 
 #Change CV to Random CV
 CV_L <- random_lcl_cv
@@ -1153,6 +1161,12 @@ resultsM <- matrix(ncol=2, data=results, byrow=TRUE)
 exp_l <- mean(resultsM[,2])
 
 explained_avg <- c(exp_l, exp_s)
+
+####################################################################################################################################################################
+# Expression and variance
+
+####################################################################################################################################################################
+
 ####################################################################################################################################################################
 #Supp table 1
 DS1 <- read.table("TableS3.txt")
@@ -1182,7 +1196,7 @@ names <- c("Number of Differentially Expressed Genes", "Variance Explained in LC
            "number of expressed genes",
            "fraction of donor effect genes in stem cells w/ elcl",
            "fraction of donor effect genes in lcls w/ elcl",
-           "p-value correlation between: iPSCs vs LCLs",
+           "p-value correlation across: iPSCs vs LCLs",
            "p-value correlation within: iPSCs vs LCLs")
 con_all <- c(length(adjust), exp_l, exp_s, t_varexpl$p.value,  
              telcl_lcl$p.value, telcl_stem$p.value, telcl_svsl$p.value,sig_lcls, 
