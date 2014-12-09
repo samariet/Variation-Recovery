@@ -126,7 +126,7 @@ data.lumi <- data.lumi[detect.ind.all,]
 head(data.lumi@featureData[[5]]) ## Should read: [1] "ILMN_1762337" "ILMN_2055271" "ILMN_1736007" "ILMN_2383229" "ILMN_1806310" "ILMN_1779670"....
 
 ###Subset expression by probes with no CEU Hapmap SNPs.
-goodprobes= read.table('HT-12v4_Probes_inhg19EnsemblGenes_NoCEUHapMapSNPs_Stranded.txt', header=T)
+goodprobes= read.table('darrengoodprobes.txt', header=T)
 probes = goodprobes$probeID
 probes = as.character(goodprobes$probeID) ## Convert from factor to character to subset data.lumi
 data.lumi.clean = data.lumi[data.lumi@featureData[[5]] %in% probes, ] #featureData[[5]] should be probe names... Goes from 31,945 to 20,224
@@ -253,8 +253,8 @@ heatmap.2(cor.stem, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
           Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
 cor.lcl <- cor(abatch_lcl,method="pearson", use="complete.obs")
-heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.stem))),
-          Colv=as.dendrogram(hclust(as.dist(1-cor.stem))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
+heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.lcl))),
+          Colv=as.dendrogram(hclust(as.dist(1-cor.lcl))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
 ####################################################################################################################################################################
 
@@ -315,7 +315,7 @@ title.PC = "PCA of Gene Expression in LCLs"
 color = indiv.fl
 par(mfrow = c(1,1),oma=c(0,0,2,0)) 
 plot(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fs, cex = 0.55, pos=3)   
+text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fl, cex = 0.55, pos=3)   
 for(i in 2:4) {
   plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
@@ -548,6 +548,37 @@ mean_dist_all_lcl <- mean(dist_all_lcl)
 
 
 
+####################################################################################################################################################################
+#Euclidean Distances of projections onto PCs 1 and 2
+#Distance between all
+ED_t_stem <- t.test(mdS, dist(PC12))
+Edist_stem <- c(mdS_mean, mean(dist(PC12)), ED_t_stem$p.value)
+names(Edist_stem)<- c("ED12 within", "ED12 between all", "p-value")
+Edist_stem
+
+ED_t_lcl <- t.test(mdL, dist(PC12_L))
+Edist_lcl <- c(mdL_mean, mean(dist(PC12_L)), ED_t_lcl$p.value)
+names(Edist_lcl)<- c("ED12 within", "ED12 between", "p-value")
+Edist_lcl
+
+#Distance between different clsuters
+ED_t_stemx <- t.test(mdS, dist_all_stem)
+Edist_stemx <- c(mdS_mean, mean_dist_all_stem, ED_t_stemx$p.value)
+names(Edist_stemx)<- c("ED12 within", "ED12 between all", "p-value")
+Edist_stemx
+
+ED_t_lclx <- t.test(mdL, dist_all_lcl)
+Edist_lclx <- c(mdL_mean, mean_dist_all_lcl, ED_t_lclx$p.value)
+names(Edist_lclx)<- c("ED12 within", "ED12 between", "p-value")
+Edist_lclx
+
+#combine across
+Edist <- cbind(Edist_stemx, Edist_lclx)
+colnames(Edist) <- c("iPSCs", "LCLs")
+Edist_t <- t(Edist)
+Edist_t
+
+
 
 ####################################################################################################################################################################
 #Differential expression with limma
@@ -581,36 +612,6 @@ result <- decideTests(fit2)
 result
 
 ####################################################################################################################################################################
-#Euclidean Distances of projections onto PCs 1 and 2
-#Distance between all
-ED_t_stem <- t.test(mdS, dist(PC12))
-Edist_stem <- c(mdS_mean, mean(dist(PC12)), ED_t_stem$p.value)
-names(Edist_stem)<- c("ED12 within", "ED12 between all", "p-value")
-Edist_stem
-
-ED_t_lcl <- t.test(mdL, dist(PC12_L))
-Edist_lcl <- c(mdL_mean, mean(dist(PC12_L)), ED_t_lcl$p.value)
-names(Edist_lcl)<- c("ED12 within", "ED12 between", "p-value")
-Edist_lcl
-
-#Distance between different clsuters
-ED_t_stemx <- t.test(mdS, dist_all_stem)
-Edist_stemx <- c(mdS_mean, mean_dist_all_stem, ED_t_stemx$p.value)
-names(Edist_stemx)<- c("ED12 within", "ED12 between all", "p-value")
-Edist_stemx
-
-ED_t_lclx <- t.test(mdL, dist_all_lcl)
-Edist_lclx <- c(mdL_mean, mean_dist_all_lcl, ED_t_lclx$p.value)
-names(Edist_lclx)<- c("ED12 within", "ED12 between", "p-value")
-Edist_lclx
-
-#combine across
-Edist <- cbind(Edist_stemx, Edist_lclx)
-colnames(Edist) <- c("iPSCs", "LCLs")
-Edist_t <- t(Edist)
-Edist_t
-
-####################################################################################################################################################################
 #Correlations: mean for each individual and for all samples of all individuals
 cor_wmeanl <- apply(cor_within_l,2, mean, na.rm=TRUE)
 cor_wmeans <- apply(cor_within_s,2, mean, na.rm=TRUE)
@@ -620,12 +621,6 @@ cor_all_both <- cbind(cor_all_lcl, cor_all_stem)
 boxplot(cor_all_both)
 boxplot(cor_both)
 boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for Stem cells and LCLs")
-
-cor_all_6s <- sample(cor_all_stem, 6)
-cor_all_6l <- sample(cor_all_lcl, 6)
-#cor_all_stem <- cor_all_6s
-#or_all_lcl <- cor_all_6l
-t.test(cor_all_6s, cor_all_6l)
 
 cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
 cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
@@ -637,7 +632,6 @@ boxplot(cor_tots) #between all samples
 boxplot(cor_total) #mean for each group
 
 
-# Get P values
 t.test(cor_within_l, cor_all_lcl)
 t.test(cor_within_s, cor_all_stem)
 t.test(cor_wmeanl, cor_all_lcl)
@@ -645,6 +639,7 @@ t.test(cor_wmeans, cor_all_stem)
 
 t_cor_a <- t.test(cor_all_lcl, cor_all_stem)
 t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l))
+t_cor_w <- t.test(as.vector(cor_wmeans), as.vector(cor_wmeanl))
 t_cor_w
 pv_w <- signif(t_cor_w$p.value,1)
 pv_w
@@ -665,6 +660,17 @@ cor_df <- data.frame(cor_total_vec, type, group, groupn)
 ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
 
 
+cor_total_vec <- c(cor_within_s, cor_within_l, cor_all_stem, cor_all_lcl)
+
+type <- c(rep("stem", times=length(cor_within_s)), rep("lcl", times=length(cor_within_l)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
+group <- c(rep(as.factor("Within Individuals"), times=(length(cor_within_s)+length(cor_within_l))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
+groupn <- c(rep("1", times=(length(cor_within_s)+length(cor_within_l))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
+
+cor_df <- data.frame(cor_total_vec, type, group, groupn)
+
+ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
+
+
 ####################################################################################################################################################################
 ## Coefficient of variatation
 #Between samples coefficient of variation
@@ -677,10 +683,6 @@ mean_S <- apply(abatch_stem, 1, mean)
 mean_L <- apply(abatch_lcl, 1, mean)
 
 plot(log(CV_S), mean_S)
-plot(var_lcl, mean_L)
-
-plot(mean_S, log(CV_S))
-plot(mean_S, log(var_stem))
 
 ## Calculate CV between individuals ##
 
@@ -696,8 +698,6 @@ df_s6 <- df_astem[,(indiv.fs==6)]
 
 
 df_alcl <- data.frame(rbind(abatch_lcl, ID.fl))
-
-head(df_l5)
 
 random_stem <- cbind(sample(df_s1,1),sample(df_s2,1), sample(df_s3,1), sample(df_s4,1),sample(df_s5,1),sample(df_s6,1))
 length(random_stem)
@@ -1064,7 +1064,8 @@ fraction_hvstem_elcl <- nrow(lcl_stem) / nrow(bottom_stem)
 
 ####################################################################################################################################################################
 
-#Plot Variance
+#Plot Variance subsetting genes by eQTL status
+
 dodge <- position_dodge(width=0.9)
 var_lcl_eQTLs <- c(elcl_stemvar, elcl_lclvar, var_stem, var_lcl)
 length(var_lcl_eQTLs)
@@ -1086,16 +1087,6 @@ cv_log2 <- log2(cv_lcleQTLs)
 df_cv <- data.frame(cv_log2, names_var, type_var)
 df_cv_se <- summarySE(df_cv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
 ggplot(df_cv, aes(type_var,cv_log2, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
-
-t.test(elcl_stemvar, elcl_lclvar)
-t.test(elcl_stemvar, var_stem)
-t.test(CV_S, CV_L)
-t.test(cv_elcl_stem, CV_S)
-t.test(cv_elcl_lcl, CV_L)
-t.test(cv_elcl_stem, cv_elcl_lcl)
-t.test(cv_elcl_stem, cv_nelcl_stem)
-t.test(cv_elcl_lcl, cv_nelcl_lcl)
-t.test(cv_nelcl_lcl, cv_nelcl_stem)
 
 #Plot coefficient of variation with vs without eqtls
 cv_nlcleQTLs <- c(cv_elcl_lcl, cv_elcl_stem, cv_nelcl_lcl, cv_nelcl_stem)
@@ -1122,14 +1113,6 @@ expr_lcl_mean_eqtl <- apply(expr_eqtl_lcls, 1, mean)
 expr_nmeans <- c(expr_stem_mean_eqtl,expr_lcl_mean_eqtl, expr_stem_mean_neqtl, expr_lcl_mean_neqtl)
 df_nmean <- data.frame(expr_nmeans, names_var, type_var)
 ggplot(df_nmean, aes(type_var,expr_nmeans, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
-
-t.test(expr_stem_mean_eqtl, expr_lcl_mean_eqtl)
-t.test(elcl_stemvar, elcl_lclvar)
-t.test(elcl_stemvar, var_stem)
-t.test(CV_S, CV_L)
-t.test(cv_elcl_stem, cv_elcl_lcl)
-t.test(cv_elcl_lcl, cv_nelcl_lcl)
-t.test(cv_elcl_stem, cv_nelcl_stem)
 
 ####################################################################################################################################################################
 #Amount of variation explained by individual
@@ -1273,7 +1256,7 @@ title.PC = "PCA of Gene Expression in LCLs"
 color = indiv.fl
 par(mfrow = c(1,1),oma=c(0,0,2,0)) 
 plot(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fs, cex = 0.55, pos=3)   
+text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fl, cex = 0.55, pos=3)   
 for(i in 2:4) {
   plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
