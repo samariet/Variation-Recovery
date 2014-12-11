@@ -126,9 +126,11 @@ detect_stem <- detect[,grep("iPSC", colnames(detect))]
 
 stem_detected <-rowSums(detect_stem < 0.05) 
 LCL_detected <- rowSums(detect_LCL < 0.05)
+all_detected <- rowSums(detect < 0.05)
 
 detect.stem <- which(stem_detected >2)
 detect.lcl <- which(LCL_detected>2)
+detect.all <- which(all_detected > 33)
 
 #Take only the probes that have a detection p-value<.05 in at least two replicates
 detect_quant.all= rowSums(data.lumi@assayData$detection<0.05) #47,311
@@ -137,6 +139,7 @@ data.lumi <- data.lumi[detect.ind.all,]
 
 #data.lumi <- data.lumi[detect.lcl,]
 #data.lumi <- data.lumi[detect.stem,]
+#data.lumi <- data.lumi[detect.all,]
 ###Find the column that is lumi_ID in feature data usually column 1
 head(data.lumi@featureData[[5]]) ## Should read: [1] "ILMN_1762337" "ILMN_2055271" "ILMN_1736007" "ILMN_2383229" "ILMN_1806310" "ILMN_1779670"....
 
@@ -931,6 +934,8 @@ length(expr_LCL_hs_mean)
 boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
 t.test(expr_stem_hs_mean, expr_LCL_hs_mean)
 t.test(expr_LCL_mean, expr_stem_mean)
+t.test(expr_stem_hs_mean, expr_stem_mean)
+t.test(expr_LCL_mean, expr_LCL_hs_mean)
 
 #Overlap of top and bottom between cell types
 overlap <- intersect(tops[,2], topl[,2])
@@ -1192,14 +1197,16 @@ names <- c("Number of Differentially Expressed Genes", "Variance Explained in LC
            "p-value for within-individual correlation btw cell types", "p-value for across-individual correlation btw cell types",
            "number of differentially expressed genes FDR<0.01",
            "number of expressed genes",
-           "fraction of donor effect genes in stem cells w/ elcl",
-           "fraction of donor effect genes in lcls w/ elcl",
+           "fraction of donor effect genes in lcls cells w/ elcl",
+           "fraction of donor effect genes in stems w/ elcl",
            "p-value correlation across: iPSCs vs LCLs",
-           "p-value correlation within: iPSCs vs LCLs")
+           "p-value correlation within: iPSCs vs LCLs",
+           "p-value variance btw LCLs and iPSCs",
+           "p-value varaince ration btw LCLs and iPSCs")
 con_all <- c(length(adjust), exp_l, exp_s, t_varexpl$p.value,  
              telcl_lcl$p.value, telcl_stem$p.value, telcl_svsl$p.value,sig_lcls, 
              sig_stems, pv_wm, pv_b, length(adjust), nrow(abatch_all),
-             fraction_hvlcl_elcl, fraction_hvstem_elcl, pv_b, pv_w)
+             fraction_hvlcl_elcl, fraction_hvstem_elcl, pv_b, pv_w, pv_var, pv_var_rat)
 df_all <- data.frame(names, con_all)
 df_all
 
