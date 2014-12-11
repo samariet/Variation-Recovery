@@ -647,47 +647,33 @@ cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-len
 cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
 
 boxplot(cor_tots) #between all samples
-boxplot(cor_total) #mean for each group
+boxplot(cor_total) #mean for each individual
 
-
-t.test(cor_within_l, cor_all_lcl)
-t.test(cor_within_s, cor_all_stem)
-t.test(cor_wmeanl, cor_all_lcl)
-t.test(cor_wmeans, cor_all_stem)
-
-t_cor_a <- t.test(cor_all_lcl, cor_all_stem)
 t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l))
-t_cor_w <- t.test(as.vector(cor_wmeans), as.vector(cor_wmeanl))
-t_cor_w
+#t_cor_w <- t.test(as.vector(cor_wmeans), as.vector(cor_wmeanl))
 pv_w <- signif(t_cor_w$p.value,1)
-pv_w
+
 t_cor_wmean <- t.test(cor_wmeanl, cor_wmeans)
 pv_wm <- signif(t_cor_wmean$p.value, 1)
-pv_wm
+
 t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
 pv_b <- signif(t_cor_b$p.value, 1)
-pv_b
 
 #Make nice boxplot
 type <- c(rep("stem", times=length(cor_wmeans)), rep("lcl", times=length(cor_wmeanl)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
 group <- c(rep(as.factor("Within Individuals"), times=(length(cor_wmeans)+length(cor_wmeanl))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
 groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
-
 cor_df <- data.frame(cor_total_vec, type, group, groupn)
-
 ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
 
 
-cor_total_vec <- c(cor_within_s, cor_within_l, cor_all_stem, cor_all_lcl)
-
-type <- c(rep("stem", times=length(cor_within_s)), rep("lcl", times=length(cor_within_l)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
-group <- c(rep(as.factor("Within Individuals"), times=(length(cor_within_s)+length(cor_within_l))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
-groupn <- c(rep("1", times=(length(cor_within_s)+length(cor_within_l))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
-
-cor_df <- data.frame(cor_total_vec, type, group, groupn)
-
-ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
-
+# cor_total_vec <- c(cor_within_s, cor_within_l, cor_all_stem, cor_all_lcl)
+# type <- c(rep("stem", times=length(cor_within_s)), rep("lcl", times=length(cor_within_l)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
+# group <- c(rep(as.factor("Within Individuals"), times=(length(cor_within_s)+length(cor_within_l))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
+# groupn <- c(rep("1", times=(length(cor_within_s)+length(cor_within_l))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
+# cor_df <- data.frame(cor_total_vec, type, group, groupn)
+# ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
+# 
 
 ####################################################################################################################################################################
 ## Coefficient of variatation
@@ -699,8 +685,6 @@ t.test(CV_S, CV_L)
 
 mean_S <- apply(abatch_stem, 1, mean)
 mean_L <- apply(abatch_lcl, 1, mean)
-
-plot(log(CV_S), mean_S)
 
 ## Calculate CV between individuals ##
 
@@ -730,7 +714,6 @@ dim(random_stem)
 
 #select corresponding lcl
 random_lcl <- df_alcl[,which(df_alcl[nrow(df_alcl),] %in% ID_random)]
-#random_lcl <- cbind(sample(df_l1,1), sample(df_l2,1), sample(df_l3,1), sample(df_l4,1), sample(df_l5,1), sample(df_l6,1))
 
 random_stem <- random_stem[-nrow(random_stem),]
 random_lcl <- random_lcl[-nrow(random_lcl),]
@@ -978,13 +961,6 @@ for(i in 1:4) {
 }
 
 
-cor.a <- cor(abatch_all_highlcl, method="pearson")
-dis.a <- 1-cor.a
-distance.a <- as.dist(dis.a)
-hc.a <- hclust(distance.a)
-dhc.a <- as.dendrogram(hc.a)
-plot(dhc.a)
-
 ####################################################################################################################################################################
 #eQTL enrichment
 
@@ -1088,16 +1064,11 @@ fraction_hvstem_elcl <- nrow(lcl_stem) / nrow(bottom_stem)
 
 dodge <- position_dodge(width=0.9)
 var_lcl_eQTLs <- c(elcl_stemvar, elcl_lclvar, var_stem, var_lcl)
-length(var_lcl_eQTLs)
 var_lcl_eQTLs <- sapply(var_lcl_eQTLs, log)
 names_var <- c(rep("iPSC", times=length(elcl_stemvar)), rep("LCL", times=length(elcl_lclvar)), rep("iPSC", times=length(var_stem)), rep("LCL", times=length(var_lcl)))
-length(names_var)
 type_var <- c((rep("eQTL var",  times=(length(elcl_stemvar)+length(elcl_lclvar)))), (rep("mean var", times=(length(var_stem)+length(var_lcl))))) 
-length(type_var)
-
 df_var <- data.frame(var_lcl_eQTLs, names_var, type_var, fill=TRUE)
 df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
-dodge <- position_dodge(width=0.9)
 #ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
 ggplot(df_var, aes(type_var, var_lcl_eQTLs, fill=names_var)) + geom_boxplot(aes(fill=names_var), position=dodge)
 
@@ -1130,10 +1101,11 @@ expr_lcl_mean_neqtl <- apply(expr_neqtl_lcls, 1, mean)
 expr_eqtl_lcls<- expr_LCL[(rownames(expr_LCL) %in% eQTL_lcls),]
 expr_lcl_mean_eqtl <- apply(expr_eqtl_lcls, 1, mean)
 
-expr_nmeans <- c(expr_stem_mean_eqtl,expr_lcl_mean_eqtl, expr_stem_mean_neqtl, expr_lcl_mean_neqtl)
-df_nmean <- data.frame(expr_nmeans, names_var, type_var)
-ggplot(df_nmean, aes(type_var,expr_nmeans, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+expr_nmeans <- c(expr_lcl_mean_eqtl, expr_stem_mean_eqtl, expr_lcl_mean_neqtl, expr_stem_mean_neqtl)
+df_nmean <- data.frame(expr_nmeans, names_var, type_var, cell_type)
+ggplot(df_nmean, aes(type_var,expr_nmeans, fill=cell_type)) +geom_boxplot(aes(fill=cell_type), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
+t.test(expr_eqtl_lcls, expr_eqtl_stems)
 ####################################################################################################################################################################
 #Amount of variation explained by individual
 #Stems
@@ -1167,12 +1139,11 @@ explained_avg <- c(exp_l, exp_s)
 
 ####################################################################################################################################################################
 # Expression and variance
-
+plot(log(CV_S), mean_S)
 ####################################################################################################################################################################
 
 ####################################################################################################################################################################
 #Supp table 1
-DS1 <- read.table("TableS3.txt")
 
 for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_lcls) 
 
@@ -1183,7 +1154,7 @@ for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_
 
 ####################################################################################################################################################################
 
-# Consolidate numbers you'll use in paper.
+# Consolidate numbers and plots  you'll use in paper.
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
 telcl_svsl <- t.test(cv_elcl_stem, cv_elcl_lcl)
@@ -1284,3 +1255,4 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
 
+boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
