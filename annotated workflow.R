@@ -964,50 +964,6 @@ for(i in 1:4) {
 ####################################################################################################################################################################
 #eQTL enrichment
 
-library(plyr)
-## Summarizes data.
-## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
-##   data: a data frame.
-##   measurevar: the name of a column that contains the variable to be summariezed
-##   groupvars: a vector containing names of columns that contain grouping variables
-##   na.rm: a boolean that indicates whether to ignore NA's
-##   conf.interval: the percent range of the confidence interval (default is 95%)
-summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE) {
-  require(plyr)
-  
-  # New version of length which can handle NA's: if na.rm==T, don't count them
-  length2 <- function (x, na.rm=FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else       length(x)
-  }
-  
-  # This does the summary. For each group's data frame, return a vector with
-  # N, mean, and sd
-  datac <- ddply(data, groupvars, .drop=.drop,
-                 .fun = function(xx, col) {
-                   c(N    = length2(xx[[col]], na.rm=na.rm),
-                     mean = mean   (xx[[col]], na.rm=na.rm),
-                     sd   = sd     (xx[[col]], na.rm=na.rm)
-                   )
-                 },
-                 measurevar
-  )
-  
-  # Rename the "mean" column    
-  datac <- rename(datac, c("mean" = measurevar))
-  
-  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
-  
-  # Confidence interval multiplier for standard error
-  # Calculate t-statistic for confidence interval: 
-  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
-  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
-  datac$ci <- datac$se * ciMult
-  
-  return(datac)
-}
-
 ## LCL eQTLs only
 # eQTL_lcls <- read.table(c("eQTLs lcls.tab"), fill=TRUE) #from ncbi website.
 eQTL_lcls <- read.table(c("pritch_final_eqtl_list.txt"))
@@ -1068,15 +1024,12 @@ var_lcl_eQTLs <- sapply(var_lcl_eQTLs, log)
 names_var <- c(rep("iPSC", times=length(elcl_stemvar)), rep("LCL", times=length(elcl_lclvar)), rep("iPSC", times=length(var_stem)), rep("LCL", times=length(var_lcl)))
 type_var <- c((rep("eQTL var",  times=(length(elcl_stemvar)+length(elcl_lclvar)))), (rep("mean var", times=(length(var_stem)+length(var_lcl))))) 
 df_var <- data.frame(var_lcl_eQTLs, names_var, type_var, fill=TRUE)
-df_var_se <- summarySE(df_var, measurevar="var_lcl_eQTLs", groupvars=c("type_var","names_var"))
-#ggplot(df_var_se, aes(type_var,var_lcl_eQTLs, fill=names_var)) +geom_bar(stat="identity", position=dodge) + geom_errorbar(aes(ymin=var_lcl_eQTLs-se, ymax=var_lcl_eQTLs+se), width=0.2, position=dodge)
 ggplot(df_var, aes(type_var, var_lcl_eQTLs, fill=names_var)) + geom_boxplot(aes(fill=names_var), position=dodge)
 
 #Plot coefficient of variation
 cv_lcleQTLs <- c(cv_elcl_stem, cv_elcl_lcl, CV_S, CV_L)
 cv_log2 <- log2(cv_lcleQTLs)
 df_cv <- data.frame(cv_log2, names_var, type_var)
-df_cv_se <- summarySE(df_cv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
 ggplot(df_cv, aes(type_var,cv_log2, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
 #Plot coefficient of variation with vs without eqtls
@@ -1086,9 +1039,10 @@ names_var <- c(rep("LCL", times=length(cv_elcl_lcl)),  rep("iPSC", times=length(
 type_var <- c((rep("Genes with eQTLs",  times=(length(cv_elcl_stem)+length(cv_elcl_lcl)))), (rep("Genes without eQTLs", times=(length(cv_nelcl_stem)+length(cv_nelcl_lcl))))) 
 cell_type <- c(rep("1", times=length(cv_elcl_lcl)),  rep("2", times=length(cv_elcl_stem)), rep("1", times=length(cv_nelcl_lcl)), rep("2", times=length(cv_nelcl_stem)))
 df_ncv <- data.frame(cv_nlog2, names_var, type_var, cell_type)
-df_ncv_se <- summarySE(df_ncv, measurevar="cv_lcleQTLs", groupvars=c("type_var", "names_var"))
 ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
+
+## Difference in means between cell types subsetted by eQTL status? 
 expr_neqtl_stems<- expr_stem[!(rownames(expr_stem) %in% eQTL_lcls),]
 expr_stem_mean_neqtl <- apply(expr_neqtl_stems, 1, mean)
 
