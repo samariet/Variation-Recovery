@@ -40,13 +40,23 @@ plot(data.lumi, what='boxplot')
 plot(data.lumi, what='density')
 
 #Keep only stem cells and iPSCs.(No hearts)
+#If using file from GEO, comment out this line
 data.lumi <- data.lumi[,c(1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36)]
+
+#If using file from GEO, comment out this line
 
 #Define covariates for both cell types, independently and together. 
 both = c(1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36)
 stems = c(2,4,6,8,10,14,16,18,20,22,24,26,28,30,32,34,36)
 lcls = c(1,3,5,7,9,13,15,17,19,21,23,25,27,29,31,33,35)
 
+#If using GEO file
+# both = c(1:34)
+# stems = c(2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34)
+# lcls = c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33)
+
+geo_table <- data.frame(data)
+#write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/hgnc_lcl_names.txt", sep="\t", row.names=F, col.names=F, quote=F)
 
 #Covariates indexes from file. 
 samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE)
@@ -891,6 +901,9 @@ hist(adjust_lcls)
 #count significant genes
 sig_stems <- length(adjust_stems[adjust_stems<.05])
 sig_lcls <- length(adjust_lcls[adjust_lcls<.05])
+
+# Test whether these p-values are perfectly correlated to within to between variance ratio
+identical(rownames(var_ratio_stem), rownames(adjust_stems))
 
 #Set significance cutoff for plot by averaging the ratio that corresponds with significance in both cell types
 cutoff_stems <- rordereds[sig_stems,]
