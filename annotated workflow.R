@@ -55,8 +55,9 @@ lcls = c(1,3,5,7,9,13,15,17,19,21,23,25,27,29,31,33,35)
 # stems = c(2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34)
 # lcls = c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33)
 
-geo_table <- data.frame(data)
-#write.table(bottom_lclnames, "C:/Users/a a/Documents/Lab/Variation Recovery/hgnc_lcl_names.txt", sep="\t", row.names=F, col.names=F, quote=F)
+geo_table <- data.frame(data.lumi@featureData$ProbeID, data.lumi@assayData$exprs, data.lumi@assayData$detection )
+
+write.table(geo_table, "C:/Users/a a/Documents/Lab/Variation Recovery/geo_table", sep="\t", row.names=F,quote=F)
 
 #Covariates indexes from file. 
 samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE)
@@ -867,7 +868,7 @@ for(i in 1:2) {
 }
 
 ####################################################################################################################################################################
-#Gene by gene: variane attributable to individual?
+#Gene by gene: variance associated with individual of origin
 
 #pvalues for each gene association with factor individual
 gene_names <- rownames(abatch_all)
@@ -958,20 +959,6 @@ ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(
 #Absolute
 var_all <- data.frame(var=c(var_stem, var_lcl), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("1", "2"), times=c(length(stem_var_rat),length(lcl_var_rat))))
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white'), axis.title=element_text(size=14)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
-
-abatch_all_highstem <- abatch_all[rownames(abatch_all) %in% bottom_stemnames,]
-abatch_all_highlcl <- abatch_all[rownames(abatch_all) %in% bottom_lclnames,]
-abatch_all_highboth <- abatch_all[rownames(abatch_all) %in% roverlap,]
-
-sum.PC <- prcomp(na.omit(abatch_all_highboth), scale=TRUE)
-sumsum <- summary(sum.PC)
-title.PC = "PCA of Gene Expression of iPSCs and LCLs"
-par(mfrow = c(1,1), oma=c(0,0,2,0))
-color=indiv.fb
-for(i in 1:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i], cex=1.5, col=color, pch=20, main=title.PC, xlab= paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=name.fb, cex = 0.8, pos=3)   
-}
 
 
 ####################################################################################################################################################################
