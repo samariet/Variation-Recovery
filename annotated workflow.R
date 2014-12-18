@@ -318,11 +318,13 @@ ggdendrogram(d_lcl, rotate=TRUE, axes=TRUE)
 ####################################################################################################################################################################
 
 ### PCA ###
-
+expr_nice_s <- t(apply(abatch_stem,1,function(x){x-mean(x)}))
+expr_nice_l <- t(apply(abatch_lcl,1,function(x){x-mean(x)}))
+expr_nice_a <- t(apply(abatch_all,1,function(x){x-mean(x)}))
 col.list <- c("green", "red", "purple", "blue", "black", "orange")
 palette(col.list)
 
-sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_s, scale=TRUE))
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -338,7 +340,7 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
 }  
 
-sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -354,7 +356,7 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
 
-sum.PC <- prcomp(na.omit(abatch_all), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_a), scale=TRUE, center=TRUE)
 sumsum <- summary(sum.PC)
 title.PC = "PCA of Gene Expression of iPSCs and LCLs"
 par(mfrow = c(1,1), oma=c(0,0,2,0))
@@ -485,7 +487,7 @@ boxplot(cor_all_lcl)
 ### Euclidean distance within and between indvl of PC projections 1 & 2 ###
 
 #Stems
-sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_s), scale=TRUE)
 PC12 <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
 
 # Within Individual
@@ -533,7 +535,7 @@ mean_dist_all_stem <- mean(dist_all_stem)
 
 
 # LCLs
-sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
 PC12_L <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
 
 #Dist by individual
@@ -664,7 +666,7 @@ cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_ste
 boxplot(cor_tots) #between all samples
 boxplot(cor_total) #mean for each individual
 
-t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l))
+t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l)) #use all data points. this is also what is in paper boxplot (supplement)
 #t_cor_w <- t.test(as.vector(cor_wmeans), as.vector(cor_wmeanl))
 pv_w <- signif(t_cor_w$p.value,1)
 
@@ -674,7 +676,7 @@ pv_wm <- signif(t_cor_wmean$p.value, 1)
 t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
 pv_b <- signif(t_cor_b$p.value, 1)
 
-#Make nice boxplot
+#Make nice boxplots
 type <- c(rep("stem", times=length(cor_wmeans)), rep("lcl", times=length(cor_wmeanl)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
 group <- c(rep(as.factor("Within Individuals"), times=(length(cor_wmeans)+length(cor_wmeanl))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
 groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
@@ -720,7 +722,7 @@ random_stem <- cbind(sample(df_s1,1),sample(df_s2,1), sample(df_s3,1), sample(df
 length(random_stem)
 names(random_stem)
 dim(random_stem)
-ID_random <- random_stem[(nrow(random_stem)),]
+ID_random <- random_stem[(nrow(random_stem)),] #list IDs for selected lines
 ID_random
 
 #random_stem_m <- as.matrix(unlist(random_stem), nrow=nrow(abatch_stem), byrow=TRUE)
@@ -728,10 +730,10 @@ head(random_stem)
 dim(random_stem)
 
 #select corresponding lcl
-random_lcl <- df_alcl[,which(df_alcl[nrow(df_alcl),] %in% ID_random)]
+random_lcl <- df_alcl[,which(df_alcl[nrow(df_alcl),] %in% ID_random)] #chose equivalent LCLs
 
-random_stem <- random_stem[-nrow(random_stem),]
-random_lcl <- random_lcl[-nrow(random_lcl),]
+random_stem <- random_stem[-nrow(random_stem),] #remove individual identifiers
+random_lcl <- random_lcl[-nrow(random_lcl),] #remove individual identifiers
 
 random_stem_cv <- apply(random_stem, 1, cv)
 high_CVSR <- random_stem_cv[which(random_stem_cv>.025)]
@@ -764,16 +766,6 @@ CV_S <- random_stem_cv
 abatch_all_highCVS <- abatch_all[rownames(abatch_all) %in% names(high_CVS),]
 abatch_all_highCVL <- abatch_all[rownames(abatch_all) %in% names(high_CVL),]
 abatch_all_highCVLS <- abatch_all[rownames(abatch_all) %in% high_CVLS,]
-
-sum.PC <- prcomp(na.omit(abatch_all_highCVLS), scale=TRUE)
-sumsum <- summary(sum.PC)
-title.PC = "PCA of Gene Expression of iPSCs and LCLs"
-par(mfrow = c(1,1), oma=c(0,0,2,0))
-color=indiv.fb
-for(i in 1:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i], cex=1.5, col=color, pch=20, main=title.PC, xlab= paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=name.fb, cex = 0.8, pos=3)   
-}
 
 
 ####################################################################################################################################################################
@@ -907,9 +899,6 @@ hist(adjust_lcls)
 sig_stems <- length(adjust_stems[adjust_stems<.05])
 sig_lcls <- length(adjust_lcls[adjust_lcls<.05])
 
-# Test whether these p-values are perfectly correlated to within to between variance ratio
-identical(rownames(var_ratio_stem), rownames(adjust_stems))
-
 #Set significance cutoff for plot by averaging the ratio that corresponds with significance in both cell types
 cutoff_stems <- rordereds[sig_stems,]
 cutoff_lcls <- rorderedl[sig_lcls,]
@@ -971,7 +960,6 @@ ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate
 ## LCL eQTLs only
 eQTL_lcls <- read.table(c("pritch_final_eqtl_list.txt"))
 eQTL_lcls <- unique(eQTL_lcls[,1])
-eQTL_lcls 
 length(eQTL_lcls)
 
 lcls_stems <- ordereds[rownames(ordereds) %in% eQTL_lcls,]
@@ -982,13 +970,9 @@ dim(lcls_lcls)
 
 elcl_stemvar <- var_stem[names(var_stem) %in% eQTL_lcls]
 cv_elcl_stem <- CV_S[names(CV_S) %in% eQTL_lcls]
-length(elcl_stemvar)
-length(cv_elcl_stem)
 
 elcl_lclvar <- var_lcl[names(var_lcl) %in% eQTL_lcls]
 cv_elcl_lcl <- CV_L[names(CV_L) %in% eQTL_lcls]
-length(elcl_lclvar)
-length(cv_elcl_lcl)
 
 cv_nelcl_stem <- CV_S[!(names(CV_S) %in% eQTL_lcls)]
 cv_nelcl_lcl <- CV_L[!(names(CV_L) %in% eQTL_lcls)]
@@ -1002,8 +986,9 @@ elcl_stem_mean <- apply(elcl_stem_expr, 1, mean)
 names_elcl_means <-  c("lcl mean eQTL genes", "ipsc mean eQTL genes")
 elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
 boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
-t.test(elcl_lcl_mean, elcl_stem_mean)
+t.test(elcl_lcl_mean, elcl_stem_mean) #see below, it is significant when you don't take the average for each gene
 
+t.test(cv_elcl_stem, cv_elcl_lcl)
 ################################################################################################################
 # Fraction of genes with eQTLs in highly variable gene lists
 
@@ -1019,8 +1004,10 @@ fraction_hvstem_elcl <- nrow(lcl_stem) / nrow(bottom_stem)
 
 ####################################################################################################################################################################
 
-#Plot Variance subsetting genes by eQTL status
+##Plots subsetting by eqtl status
 
+
+#Plot Variance subsetting genes by eQTL status (eqtls vs all)
 dodge <- position_dodge(width=0.9)
 var_lcl_eQTLs <- c(elcl_stemvar, elcl_lclvar, var_stem, var_lcl)
 var_lcl_eQTLs <- sapply(var_lcl_eQTLs, log)
@@ -1029,13 +1016,13 @@ type_var <- c((rep("eQTL var",  times=(length(elcl_stemvar)+length(elcl_lclvar))
 df_var <- data.frame(var_lcl_eQTLs, names_var, type_var, fill=TRUE)
 ggplot(df_var, aes(type_var, var_lcl_eQTLs, fill=names_var)) + geom_boxplot(aes(fill=names_var), position=dodge)
 
-#Plot coefficient of variation
+#Plot coefficient of variation subsetting by eqtl status (eqtls vs all)
 cv_lcleQTLs <- c(cv_elcl_stem, cv_elcl_lcl, CV_S, CV_L)
 cv_log2 <- log2(cv_lcleQTLs)
 df_cv <- data.frame(cv_log2, names_var, type_var)
 ggplot(df_cv, aes(type_var,cv_log2, fill=names_var)) +geom_boxplot(aes(fill=names_var), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
-#Plot coefficient of variation with vs without eqtls
+#Plot coefficient of variation subsetting by eqtl status (with vs without eqtls)
 cv_nlcleQTLs <- c(cv_elcl_lcl, cv_elcl_stem, cv_nelcl_lcl, cv_nelcl_stem)
 cv_nlog2<- log2(cv_nlcleQTLs)
 names_var <- c(rep("LCL", times=length(cv_elcl_lcl)),  rep("iPSC", times=length(cv_elcl_stem)), rep("LCL", times=length(cv_nelcl_lcl)), rep("iPSC", times=length(cv_nelcl_stem)))
@@ -1060,9 +1047,13 @@ expr_lcl_mean_eqtl <- apply(expr_eqtl_lcls, 1, mean)
 
 expr_nmeans <- c(expr_lcl_mean_eqtl, expr_stem_mean_eqtl, expr_lcl_mean_neqtl, expr_stem_mean_neqtl)
 df_nmean <- data.frame(expr_nmeans, names_var, type_var, cell_type)
+
 ggplot(df_nmean, aes(type_var,expr_nmeans, fill=cell_type)) +geom_boxplot(aes(fill=cell_type), position=dodge) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
-t.test(expr_eqtl_lcls, expr_eqtl_stems)
+t.test(expr_eqtl_lcls, expr_eqtl_stems) # see above that this is not significant when you average each gene
+t.test(expr_eqtl_stems, expr_neqtl_stems)
+t.test(expr_eqtl_lcls, expr_neqtl_lcls)
+
 ####################################################################################################################################################################
 #Amount of variation explained by individual
 #Stems
@@ -1134,6 +1125,7 @@ for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_
 ####################################################################################################################################################################
 #Paper values
 
+t.test(abatch_lcl, abatch_stem)
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
 telcl_stem <- t.test(cv_elcl_stem, cv_nelcl_stem)
 telcl_svsl <- t.test(cv_elcl_stem, cv_elcl_lcl)
@@ -1156,7 +1148,7 @@ names <- c("Number of Differentially Expressed Genes", "Variance Explained in LC
            "p-value correlation across: iPSCs vs LCLs",
            "p-value correlation within: iPSCs vs LCLs",
            "p-value variance btw LCLs and iPSCs",
-           "p-value varaince ration btw LCLs and iPSCs",
+           "p-value varaince ratio btw LCLs and iPSCs",
            "p-value euclidean distance within vs btw ind LCL",
            "p-value euclidean distance within vs btw ind stem",
            "fraction iPSC genes with no donor effect in LCLs")
@@ -1191,7 +1183,7 @@ ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(
 
 #Variance in genes with eQTLs vs without
 leg_pos <- c(.07,.9)
-ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +labs(y="log(coefficient of variation)", x="") + theme(axis.title=element_text(size=18, face="plain"), legend.background=element_rect(fill="transparent"),panel.border=element_rect(color="black", fill=NA),legend.position = leg_pos, text = element_text(size=18, face="bold"), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +ylim(c(-11, -1.5))+labs(y="log(coefficient of variation)", x="") + theme(axis.title=element_text(size=18, face="plain"), legend.background=element_rect(fill="transparent"),panel.border=element_rect(color="black", fill=NA),legend.position = leg_pos, text = element_text(size=18, face="bold"), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
 #Black and white dendrograms
 ggplot(segment(d_stem)) + 
@@ -1200,7 +1192,13 @@ ggplot(segment(d_stem)) +
   scale_y_reverse(expand = c(0.2, 0)) +
   geom_text(data = d_stem$labels, 
             aes(x = x, y = y, label = label), size = 5, vjust = .5, hjust= -.3, fontface="bold") +
-  theme_dendro()
+  theme_bw() +
+  ylab("distance")+
+  theme(plot.background = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.title.y=element_blank(), axis.line=element_line(size=1),
+        axis.text.x=element_text(size=18), axis.title.x=element_text(size=18)
+  )
 
 ggplot(segment(d_lcl)) + 
   geom_segment(aes(x = x, y = y, xend = xend, yend = yend), size=1.0) + 
@@ -1208,14 +1206,20 @@ ggplot(segment(d_lcl)) +
   scale_y_reverse(expand = c(0.2, 0)) +
   geom_text(data = d_lcl$labels, 
             aes(x = x, y = y, label = label), size = 5, vjust = .5, hjust= -.3, fontface="bold") +
-  theme_dendro()
+  theme_bw() +
+  ylab("distance") +
+  theme(plot.background = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.title.y=element_blank(), axis.line=element_line(size=1),
+        axis.text.x=element_text(size=18), axis.title.x=element_text(size=18)
+  ) 
 
 
 #PC plots
 col.list <- c("green", "red", "purple", "blue", "black", "orange")
 palette(col.list)
 
-sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_s), scale=TRUE)
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -1231,7 +1235,7 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
 }  
 
-sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -1247,7 +1251,6 @@ for(i in 2:4) {
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
 
-boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
 
 #Correlation within individual NOT MEANS
 cor_total_vec <- c(cor_within_s, cor_within_l, cor_all_stem, cor_all_lcl)
@@ -1256,3 +1259,10 @@ group <- c(rep(as.factor("Within Individuals"), times=(length(cor_within_s)+leng
 groupn <- c(rep("1", times=(length(cor_within_s)+length(cor_within_l))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
 cor_df <- data.frame(cor_total_vec, type, group, groupn)
 ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
+
+#boxplot of expression means for highly variable genes in ipscs in both cell types
+boxplot(expr_LCL_hs_mean, expr_LCL_mean, expr_stem_hs_mean, expr_stem_mean, names=c("LCL: high iPSC var", "LCL: all", "iPSC: high iPSC var", "iPSC: all"), ylab="Gene Expression")
+t.test(expr_stem_hs_mean, expr_LCL_hs_mean)
+t.test(expr_LCL_mean, expr_stem_mean)
+t.test(expr_stem_hs_mean, expr_stem_mean)
+t.test(expr_LCL_mean, expr_LCL_hs_mean)
