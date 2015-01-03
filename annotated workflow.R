@@ -268,6 +268,7 @@ dim(abatch_stem)
 abatch_lcl<- abatch_all[,c(type.fb=="L")]
 dim(abatch_lcl)
 
+#sanity checks
 SOX2s <- abatch_stem[grep("SOX2", rownames(abatch_stem)),]
 plot(SOX2s[2,])
 SOX2l <- abatch_lcl[grep("SOX2", rownames(abatch_lcl)),]
@@ -278,6 +279,15 @@ plot(octs)
 octl <- abatch_lcl[grep("POU5", rownames(abatch_lcl)),]
 octl
 plot(octl)
+
+abatch_s_mean <- apply(abatch_stem, 1, mean)
+abatch_l_mean <- apply(abatch_lcl, 1, mean)
+high_expr_stem <- names(which(abatch_s_mean > 9))
+high_expr_lcl <- names(which(abatch_l_mean > 9))
+
+write.table(high_expr_stem, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_stem.txt", sep="\t", row.names=T, col.names=F, quote=F)
+write.table(high_expr_lcl, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_lcls.txt", sep="\t", row.names=T, col.names=F, quote=F)
+
 ####################################################################################################################################################################
 
 #Heatmaps
@@ -321,27 +331,34 @@ ggdendrogram(d_lcl, rotate=TRUE, axes=TRUE)
 expr_nice_s <- t(apply(abatch_stem,1,function(x){x-mean(x)}))
 expr_nice_l <- t(apply(abatch_lcl,1,function(x){x-mean(x)}))
 expr_nice_a <- t(apply(abatch_all,1,function(x){x-mean(x)}))
+
+#expr_nice_s <- t(scale(t(abatch_stem)))
+#expr_nice_l <- t(scale(t(abatch_lcl)))
+#expr_nice_a <- t(scale(t(abatch_all)))
+
+#expr_nice_s <- abatch_stem
+#expr_nice_l <- abatch_lcl
 col.list <- c("green", "red", "purple", "blue", "black", "orange")
 palette(col.list)
 
-sum.PC <- prcomp(na.omit(expr_nice_s, scale=TRUE))
-sumsum <- summary(sum.PC)
+sum.PC.s <- prcomp(na.omit(expr_nice_s))
+sumsum.s <- summary(sum.PC.s)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
           mar = c(5,4,2,2) + 0.1) ## shrink some margins
 tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
 title.PC = "PCA of Gene Expression in iPSCs"
 color = indiv.fs
-par(mfrow = c(1,1),oma=c(0,0,2,0)) 
-plot(c(1:ncol(abatch_stem)),sum.PC$rotation[,1],cex=2,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_stem)),sum.PC$rotation[,1], indiv.fs, cex = 1.25, pos=3)   
+par(mfrow = c(1,1),oma=c(0,0,2,0))   
 for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.5,0.4), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
+  plot(sum.PC.s$rotation[,1], sum.PC.s$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, xlab=paste("PC 1 -", (sumsum.s$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.s$importance[2,i]*100),"% of variance", sep=" "))
+  text(sum.PC.s$rotation[,1], sum.PC.s$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
 }  
 
-sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
-sumsum <- summary(sum.PC)
+plot(sum.PC.s$rotation[,1], sum.PC.s$rotation[,2])
+
+sum.PC.l <- prcomp(na.omit(expr_nice_l))
+sumsum.l <- summary(sum.PC.l)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
           mar = c(5,4,2,2) + 0.1) ## shrink some margins
@@ -349,14 +366,13 @@ tmp1 <- cnvrt.coords( 0.5, 0, input='plt' )$tdev
 title.PC = "PCA of Gene Expression in LCLs"
 color = indiv.fl
 par(mfrow = c(1,1),oma=c(0,0,2,0)) 
-plot(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
-text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fl, cex = 0.55, pos=3)   
 for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
+  plot(sum.PC.l$rotation[,1], sum.PC.l$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum.l$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.l$importance[2,i]*100),"% of variance", sep=" "))
+  text(sum.PC.l$rotation[,1], sum.PC.l$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
+plot(sum.PC.l$rotation[,1], sum.PC.l$rotation[,2])
 
-sum.PC <- prcomp(na.omit(expr_nice_a), scale=TRUE, center=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_a))
 sumsum <- summary(sum.PC)
 title.PC = "PCA of Gene Expression of iPSCs and LCLs"
 par(mfrow = c(1,1), oma=c(0,0,2,0))
@@ -487,17 +503,24 @@ boxplot(cor_all_lcl)
 ### Euclidean distance within and between indvl of PC projections 1 & 2 ###
 
 #Stems
-sum.PC <- prcomp(na.omit(expr_nice_s), scale=TRUE)
-PC12 <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
+
+PC12 <- cbind(sum.PC.s$rotation[,1], sum.PC.s$rotation[,2])
 
 # Within Individual
 dist12_ind <- c()
-ind1 <- PC12[c(1,6,12),]
-ind2 <- PC12[c(2,7,13),]
-ind3 <- PC12[c(4,8,14),]
-ind4 <- PC12[c(3,9,15),]
-ind5 <- PC12[c(10,16),]
-ind6 <- PC12[c(5,11,17),]
+# ind1 <- PC12[c(1,6,12),]
+# ind2 <- PC12[c(2,7,13),]
+# ind3 <- PC12[c(4,8,14),]
+# ind4 <- PC12[c(3,9,15),]
+# ind5 <- PC12[c(10,16),]
+# ind6 <- PC12[c(5,11,17),]
+
+ind1 <- PC12[c(1,6,11),]
+ind2 <- PC12[c(2,7,12),]
+ind3 <- PC12[c(4,8,13),]
+ind4 <- PC12[c(3,14),]
+ind5 <- PC12[c(9,15),]
+ind6 <- PC12[c(5,10,16),]
 
 md1 <- mean(dist(ind1))
 md2 <- mean(dist(ind2))
@@ -523,7 +546,7 @@ dist_all_stem <- c()
 for (i in 1:(nrow(dist_stem)-1)) {
   for (j in 1:(ncol(dist_stem)-1)) {
     if(j>i) {
-    if(dist_stem[i,18]!= dist_stem[18,j]) {
+    if(dist_stem[i,17]!= dist_stem[17,j]) {
       dist_all_stem <- c(dist_all_stem, dist_stem[i,j])
     }
     }
@@ -535,17 +558,23 @@ mean_dist_all_stem <- mean(dist_all_stem)
 
 
 # LCLs
-sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
-PC12_L <- cbind(sum.PC$rotation[,1], sum.PC$rotation[,2])
+PC12_L <- cbind(sum.PC.l$rotation[,1], sum.PC.l$rotation[,2])
 
 #Dist by individual
 dist12_ind <- c()
-ind1 <- PC12_L[c(1,6,12),]
-ind2 <- PC12_L[c(2,7,13),]
-ind3 <- PC12_L[c(3,8,14),]
-ind4 <- PC12_L[c(4,9,15),]
-ind5 <- PC12_L[c(10,16),]
-ind6 <- PC12_L[c(5,11,17),]
+# ind1 <- PC12[c(1,6,12),]
+# ind2 <- PC12[c(2,7,13),]
+# ind3 <- PC12[c(3,8,14),]
+# ind4 <- PC12[c(4,9,15),]
+# ind5 <- PC12[c(10,16),]
+# ind6 <- PC12[c(5,11,17),]
+
+ind1 <- PC12_L[c(1,6,11),]
+ind2 <- PC12_L[c(2,7,12),]
+ind3 <- PC12_L[c(3,8,13),]
+ind4 <- PC12_L[c(4,14),]
+ind5 <- PC12_L[c(9,15),]
+ind6 <- PC12_L[c(5,10,16),]
 
 md1 <- mean(dist(ind1))
 md2 <- mean(dist(ind2))
@@ -570,7 +599,7 @@ dist_lcl <- dist_plus_L
 dist_all_lcl <- c()
 for (i in 1:(nrow(dist_lcl)-1)) {
   for (j in 1:(ncol(dist_lcl)-1)) {
-    if(dist_lcl[i,18]!= dist_lcl[18,j]) {
+    if(dist_lcl[i,17]!= dist_lcl[17,j]) {
       if(j>i) {
       dist_all_lcl <- c(dist_all_lcl, dist_lcl[i,j])
       }
@@ -703,7 +732,7 @@ t.test(CV_S, CV_L)
 mean_S <- apply(abatch_stem, 1, mean)
 mean_L <- apply(abatch_lcl, 1, mean)
 
-## Calculate CV between individuals ##
+## Calculate CV between individuals (don't want to confound analysis with cvs within individual)##
 
 # Pick a random line from each individual
 df_astem <- data.frame(rbind(abatch_stem, ID.fs))
@@ -758,7 +787,7 @@ head(high_CVLS)
 length(high_CVLS)
 
 
-#Change CV to Random CV
+#Change CV to Random CV for all later analyses.
 CV_L <- random_lcl_cv
 CV_S <- random_stem_cv
 
@@ -952,7 +981,7 @@ ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(
 #Absolute
 var_all <- data.frame(var=c(var_stem, var_lcl), type = rep(c("iPSC", "LCL"), times=c(length(stem_var_rat),length(lcl_var_rat))), Cell_type = rep(c("1", "2"), times=c(length(stem_var_rat),length(lcl_var_rat))))
 ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.075, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(legend.position=c(.75,.75), panel.background=element_rect(fill='white'), axis.title=element_text(size=14)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
-
+#This looks a little complicated because I had to reverse the fill order to bring the stem cell data to the front. That's why cell type order had to be switched, reversed colors and labels in second plot to agree with cell type order.
 
 ####################################################################################################################################################################
 #eQTL enrichment
@@ -1117,7 +1146,7 @@ for(i in 1:2) {
 
 for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_lcls) 
 
-#write.table(for_s1, "C:/Users/a a/Documents/Lab/Variation Recovery/s1.txt", sep="\t",quote=F) # you'll need to adjust column names
+write.table(for_s1, "C:/Users/a a/Documents/Lab/Variation Recovery/s1.txt", sep="\t",quote=F) # you'll need to adjust column names
 # the x's in column name are because R had to change characters it didn't like.
 #is cv related to association with individual?
 
