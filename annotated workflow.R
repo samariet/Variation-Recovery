@@ -85,44 +85,44 @@ rmsd.f <- as.factor(RMSD)
 #Remove hearts and put your covariates in a list
 name.fb =factor(name.f[both])
 indiv.fb = factor(indiv.f[both])
-type.fb <- factor(type.f[both])
-ID.fb <- factor(ID.f[both])
-repr_batch.fb <- factor(repr_batch.f[both])
-array_batch.fb <- factor(array_batch.f[both])
-gender.fb <- factor(gender.f[both])
-extr_batch.fb <- factor(extr_batch.f[both])
-extr_date.fb <- factor(extr_date.f[both])
-rmsd.fb <- factor(rmsd.f[both])
-covars<-list(array_batch.fb,indiv.fb,gender.fb,extr_date.fb,extr_batch.fb) #leave out repr batch for lcls, will bug later
-covars_names <- factor(c("array_batch.fb","indiv.fb","gender.fb","extr_date.fb","extr_batch.fb"))
+type.fb = factor(type.f[both])
+ID.fb = factor(ID.f[both])
+repr_batch.fb = factor(repr_batch.f[both])
+array_batch.fb = factor(array_batch.f[both])
+gender.fb = factor(gender.f[both])
+extr_batch.fb = factor(extr_batch.f[both])
+extr_date.fb = factor(extr_date.f[both])
+rmsd.fb = factor(rmsd.f[both])
+covars=list(array_batch.fb,indiv.fb,gender.fb,extr_date.fb,extr_batch.fb) #leave out repr batch for lcls, will bug later
+covars_names = factor(c("array_batch.fb","indiv.fb","gender.fb","extr_date.fb","extr_batch.fb"))
 
 #Subset stem cells and put your covariates in a list
 name.fs =name.f[stems]
 indiv.fs = indiv.f[stems]
-type.fs <- type.f[stems]
-ID.fs <- ID.f[stems]
-repr_batch.fs <- repr_batch.f[stems]
-array_batch.fs <- array_batch.f[stems]
-gender.fs <- gender.f[stems]
-extr_batch.fs <- extr_batch.f[stems]
-extr_date.fs <- extr_date.f[stems]
-rmsd.fs <- rmsd.f[stems]
-covars.s<-list(array_batch.fs,indiv.fs,gender.fs,extr_date.fs,extr_batch.fs) #leave out repr batch for lcls, will bug later
-covars_names.s <- factor(c("array_batch.fs","indiv.fs","gender.fs","extr_date.fs","extr_batch.fs"))
+type.fs = type.f[stems]
+ID.fs = ID.f[stems]
+repr_batch.fs = repr_batch.f[stems]
+array_batch.fs = array_batch.f[stems]
+gender.fs = gender.f[stems]
+extr_batch.fs = extr_batch.f[stems]
+extr_date.fs = extr_date.f[stems]
+rmsd.fs = rmsd.f[stems]
+covars.s=list(array_batch.fs,indiv.fs,gender.fs,extr_date.fs,extr_batch.fs) #leave out repr batch for lcls, will bug later
+covars_names.s = factor(c("array_batch.fs","indiv.fs","gender.fs","extr_date.fs","extr_batch.fs"))
 
 #Subset LCLs and put your covariates in a list
 name.fl =name.f[lcls]
 indiv.fl = indiv.f[lcls]
-type.fl <- type.f[lcls]
-ID.fl <- ID.f[lcls]
-repr_batch.fl <- repr_batch.f[lcls]
-array_batch.fl <- array_batch.f[lcls]
-gender.fl <- gender.f[lcls]
-extr_batch.fl <- extr_batch.f[lcls]
-extr_date.fl <- extr_date.f[lcls]
-rmsd.fl <- rmsd.f[lcls]
-covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
-covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
+type.fl = type.f[lcls]
+ID.fl = ID.f[lcls]
+repr_batch.fl = repr_batch.f[lcls]
+array_batch.fl = array_batch.f[lcls]
+gender.fl = gender.f[lcls]
+extr_batch.fl = extr_batch.f[lcls]
+extr_date.fl = extr_date.f[lcls]
+rmsd.fl = rmsd.f[lcls]
+covars.l=list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
+covars_names.l = factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
 
 colnames(data.lumi) = samplenames[both,1]
 
@@ -267,30 +267,30 @@ abatch_lcl <- abatch_lcl[,-9]
 
 name.fs = name.fs[-9]
 indiv.fs = indiv.fs[-9]
-type.fs <- type.fs[-9]
-ID.fs <- ID.fs[-9]
-repr_batch.fs <- repr_batch.fs[-9]
-array_batch.fs <- array_batch.fs[-9]
-gender.fs <- gender.fs[-9]
-extr_batch.fs <- extr_batch.fs[-9]
-extr_date.fs <- extr_date.fs[-9]
-rmsd.fs <- rmsd.fs[-9]
-covars.s<-list(array_batch.fs,indiv.fs,gender.fs,extr_date.fs,extr_batch.fs) #leave out repr batch for lcls, will bug later
-covars_names.s <- factor(c("array_batch.fs","indiv.fs","gender.fs","extr_date.fs","extr_batch.fs"))
+type.fs = type.fs[-9]
+ID.fs = ID.fs[-9]
+repr_batch.fs = repr_batch.fs[-9]
+array_batch.fs = array_batch.fs[-9]
+gender.fs = gender.fs[-9]
+extr_batch.fs = extr_batch.fs[-9]
+extr_date.fs = extr_date.fs[-9]
+rmsd.fs = rmsd.fs[-9]
+covars.s=list(array_batch.fs,indiv.fs,gender.fs,extr_date.fs,extr_batch.fs) #leave out repr batch for lcls, will bug later
+covars_names.s = factor(c("array_batch.fs","indiv.fs","gender.fs","extr_date.fs","extr_batch.fs"))
 
 #Subset LCLs and put your covariates in a list
 name.fl =name.fl[-9]
 indiv.fl = indiv.fl[-9]
-type.fl <- type.fl[-9]
-ID.fl <- ID.fl[-9]
-repr_batch.fl <- repr_batch.fl[-9]
-array_batch.fl <- array_batch.fl[-9]
-gender.fl <- gender.fl[-9]
-extr_batch.fl <- extr_batch.fl[-9]
-extr_date.fl <- extr_date.fl[-9]
-rmsd.fl <- rmsd.fl[-9]
-covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
-covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
+type.fl = type.fl[-9]
+ID.fl = ID.fl[-9]
+repr_batch.fl = repr_batch.fl[-9]
+array_batch.fl = array_batch.fl[-9]
+gender.fl = gender.fl[-9]
+extr_batch.fl = extr_batch.fl[-9]
+extr_date.fl = extr_date.fl[-9]
+rmsd.fl = rmsd.fl[-9]
+covars.l=list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
+covars_names.l = factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
 
 #sanity check (only if names are hgnc)
 SOX2s <- abatch_stem[grep("SOX2", rownames(abatch_stem)),]
