@@ -14,8 +14,6 @@ library(TeachingDemos)
 library(VennDiagram)
 library(xlsx)
 library(GSEAlm)
-library(biomaRt)
-library(piano)
 library(cluster)
 library(sva)
 library(qpcR)
@@ -43,21 +41,19 @@ plot(data.lumi, what='density')
 #If using file from GEO, comment out this line
 data.lumi <- data.lumi[,c(1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36)]
 
-#If using file from GEO, comment out this line
-
+#If using file from GEO, comment out these lines
 #Define covariates for both cell types, independently and together. 
 both = c(1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36)
 stems = c(2,4,6,8,10,14,16,18,20,22,24,26,28,30,32,34,36)
 lcls = c(1,3,5,7,9,13,15,17,19,21,23,25,27,29,31,33,35)
 
-#If using GEO file
+#If using GEO file, uncomment these lines
 # both = c(1:34)
 # stems = c(2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34)
 # lcls = c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33)
 
 geo_table_unnorm <- data.frame(data.lumi@featureData[[5]], data.lumi@assayData$exprs, data.lumi@assayData$detection )
-
-write.table(geo_table_unnorm, "C:/Users/a a/Documents/Lab/Variation Recovery/geo_table_nn", sep="\t", row.names=F,quote=F)
+#write.table(geo_table_unnorm, "C:/Users/a a/Documents/Lab/Variation Recovery/geo_table_nn", sep="\t", row.names=F,quote=F)
 
 #Covariates indexes from file. 
 samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE)
@@ -128,25 +124,26 @@ rmsd.fl <- rmsd.f[lcls]
 covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
 covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
 
+colnames(data.lumi) = samplenames[both,1]
 
 ##Consider which probes are detected in the two cell types.
-colnames(data.lumi) = samplenames[both,1]
-detect <- data.lumi@assayData$detection
-detect_LCL <- detect[,grep("LCL", colnames(detect))]
-detect_stem <- detect[,grep("iPSC", colnames(detect))]
-
-stem_detected <-rowSums(detect_stem < 0.05) 
-LCL_detected <- rowSums(detect_LCL < 0.05)
-all_detected <- rowSums(detect < 0.05)
-
-detect.stem <- which(stem_detected >2)
-detect.lcl <- which(LCL_detected>2)
-detect.all <- which(all_detected > 33)
+# detect <- data.lumi@assayData$detection
+# detect_LCL <- detect[,grep("LCL", colnames(detect))]
+# detect_stem <- detect[,grep("iPSC", colnames(detect))]
+# 
+# stem_detected <-rowSums(detect_stem < 0.05) 
+# LCL_detected <- rowSums(detect_LCL < 0.05)
+# all_detected <- rowSums(detect < 0.05)
+# 
+# detect.stem <- which(stem_detected >2)
+# detect.lcl <- which(LCL_detected>2)
+# detect.all <- which(all_detected > 33)
 
 #Take only the probes that have a detection p-value<.05 in at least two replicates
 detect_quant.all= rowSums(data.lumi@assayData$detection<0.05) #47,311
 detect.ind.all <- which(detect_quant.all > 1) #31,945
 data.lumi <- data.lumi[detect.ind.all,]
+
 #data.lumi <- data.lumi[detect.lcl,]
 #data.lumi <- data.lumi[detect.stem,]
 #data.lumi <- data.lumi[detect.all,]
@@ -158,7 +155,7 @@ head(data.lumi@featureData[[5]]) ## Should read: [1] "ILMN_1762337" "ILMN_205527
 ###Subset expression by probes with no CEU Hapmap SNPs.
 goodprobes= read.table('darrengoodprobes.txt', header=T)
 probes = goodprobes$probeID
-probes = as.character(goodprobes$probeID) ## Convert from factor to character to subset data.lumi
+probes = as.character(goodprobes$probeID) ## Convert from factor to character to subset data.lumi by darren's probe list
 data.lumi.clean = data.lumi[data.lumi@featureData[[5]] %in% probes, ] #featureData[[5]] should be probe names... Goes from 31,945 to 20,224
 
 ### NORMALIZATION ###
@@ -169,17 +166,16 @@ expr_quant.all <- data.norm.all@assayData$exprs
 dim(expr_quant.all)
 
 geo_table_norm <- data.frame(data.norm.all@featureData[[5]], data.norm.all@assayData$exprs, data.norm.all@assayData$detection )
+#write.table(geo_table_norm, "C:/Users/a a/Documents/Lab/Variation Recovery/geo_table_n", sep="\t", row.names=F,quote=F)
 
-write.table(geo_table_norm, "C:/Users/a a/Documents/Lab/Variation Recovery/geo_table_n", sep="\t", row.names=F,quote=F)
-
-###Convert expr_quant rownames to these lumi IDs
+###Convert expr_quant.all rownames to these lumi IDs
 rownames(expr_quant.all)=data.norm.all@featureData[[5]]
 #Label your columns by sample name
 samplenames = read.delim('YGilad-ST sample names switched 8-28.txt', header=TRUE)
 colnames(expr_quant.all) = samplenames[(both),1]
 
 #Subtract out mean. Make sure this is what you want to do.
-
+#expr_quant.all <- t(apply(expr_quant.all,1,function(x){x-mean(x)}))
 dim(expr_quant.all)
 expr_stem_s <- expr_quant.all[,c(type.fb=="i")]
 dim(expr_stem_s)
@@ -244,9 +240,6 @@ heatmap.2(cor.abatch.int.g, Rowv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g
           Colv=as.dendrogram(hclust(as.dist(1-cor.abatch.int.g))), margins=c(5,9),key=T, revC=T, density.info="histogram", trace="none", dendrogram = "column")
 
 genes <- rownames(abatch_all)
-SOX2 <- abatch_all[grep("SOX2", rownames(abatch_all)),]
-SOX2
-plot(SOX2[2,])
 
 #Making dendrograms
 cor <- cor(abatch_all, method="pearson")
@@ -268,7 +261,38 @@ dim(abatch_stem)
 abatch_lcl<- abatch_all[,c(type.fb=="L")]
 dim(abatch_lcl)
 
-#sanity checks
+## To remove individual 4-2
+abatch_stem <- abatch_stem[,-9]
+abatch_lcl <- abatch_lcl[,-9]
+
+name.fs = name.fs[-9]
+indiv.fs = indiv.fs[-9]
+type.fs <- type.fs[-9]
+ID.fs <- ID.fs[-9]
+repr_batch.fs <- repr_batch.fs[-9]
+array_batch.fs <- array_batch.fs[-9]
+gender.fs <- gender.fs[-9]
+extr_batch.fs <- extr_batch.fs[-9]
+extr_date.fs <- extr_date.fs[-9]
+rmsd.fs <- rmsd.fs[-9]
+covars.s<-list(array_batch.fs,indiv.fs,gender.fs,extr_date.fs,extr_batch.fs) #leave out repr batch for lcls, will bug later
+covars_names.s <- factor(c("array_batch.fs","indiv.fs","gender.fs","extr_date.fs","extr_batch.fs"))
+
+#Subset LCLs and put your covariates in a list
+name.fl =name.fl[-9]
+indiv.fl = indiv.fl[-9]
+type.fl <- type.fl[-9]
+ID.fl <- ID.fl[-9]
+repr_batch.fl <- repr_batch.fl[-9]
+array_batch.fl <- array_batch.fl[-9]
+gender.fl <- gender.fl[-9]
+extr_batch.fl <- extr_batch.fl[-9]
+extr_date.fl <- extr_date.fl[-9]
+rmsd.fl <- rmsd.fl[-9]
+covars.l<-list(array_batch.fl,indiv.fl,gender.fl,extr_date.fl,extr_batch.fl) #leave out repr batch for lcls, will bug later
+covars_names.l <- factor(c("array_batch.fl","indiv.fl","gender.fl","extr_date.fl","extr_batch.fl"))
+
+#sanity check (only if names are hgnc)
 SOX2s <- abatch_stem[grep("SOX2", rownames(abatch_stem)),]
 plot(SOX2s[2,])
 SOX2l <- abatch_lcl[grep("SOX2", rownames(abatch_lcl)),]
@@ -285,8 +309,8 @@ abatch_l_mean <- apply(abatch_lcl, 1, mean)
 high_expr_stem <- names(which(abatch_s_mean > 9))
 high_expr_lcl <- names(which(abatch_l_mean > 9))
 
-write.table(high_expr_stem, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_stem.txt", sep="\t", row.names=T, col.names=F, quote=F)
-write.table(high_expr_lcl, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_lcls.txt", sep="\t", row.names=T, col.names=F, quote=F)
+#write.table(high_expr_stem, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_stem.txt", sep="\t", row.names=T, col.names=F, quote=F)
+#write.table(high_expr_lcl, "C:/Users/a a/Documents/Lab/Variation Recovery/high_expr_lcls.txt", sep="\t", row.names=T, col.names=F, quote=F)
 
 ####################################################################################################################################################################
 
@@ -303,6 +327,7 @@ heatmap.2(cor.lcl, Rowv=as.dendrogram(hclust(as.dist(1-cor.lcl))),
 
 #Dendrograms
 
+#stem
 dis.s  <- 1-cor.stem
 distance.s <- as.dist(dis.s)
 hc.s <- hclust(distance.s)
@@ -312,10 +337,11 @@ plot(hc.s, lwd = 2, lty = 1, sub = "", hang = -1)
 d_stem <- dendro_data(dhc.s, type="rectangle")
 ggdendrogram(d_stem, rotate=TRUE, axes=TRUE)
 
+#lcl
 dis  <- 1-cor.lcl
 distance <- as.dist(dis)
 hc <- hclust(distance)
-hc_order <- c(11, 7, 8, 10, 1, 16, 9, 12, 6, 5, 3, 17, 15, 13, 4, 14, 2)
+hc_order <- c(11, 7, 8, 10, 1, 16, 9, 12, 6, 5, 3, 15, 13, 4, 14, 2)
 dhc <- as.dendrogram(hc)
 rhc <- reorder(dhc,hc_order)
 plot(dhc)
@@ -328,6 +354,8 @@ ggdendrogram(d_lcl, rotate=TRUE, axes=TRUE)
 ####################################################################################################################################################################
 
 ### PCA ###
+
+#manually center by gene
 expr_nice_s <- t(apply(abatch_stem,1,function(x){x-mean(x)}))
 expr_nice_l <- t(apply(abatch_lcl,1,function(x){x-mean(x)}))
 expr_nice_a <- t(apply(abatch_all,1,function(x){x-mean(x)}))
@@ -351,7 +379,7 @@ title.PC = "PCA of Gene Expression in iPSCs"
 color = indiv.fs
 par(mfrow = c(1,1),oma=c(0,0,2,0))   
 for(i in 2:4) {
-  plot(sum.PC.s$rotation[,1], sum.PC.s$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, xlab=paste("PC 1 -", (sumsum.s$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.s$importance[2,i]*100),"% of variance", sep=" "))
+  plot(sum.PC.s$rotation[,1], sum.PC.s$rotation[,i],cex=2, col=color,pch=20,main=title.PC, ylim=c(-.4, .4), cex.lab=1.5, cex.axis=1.2, xlab=paste("PC 1 -", (sumsum.s$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.s$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC.s$rotation[,1], sum.PC.s$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
 }  
 
@@ -367,135 +395,61 @@ title.PC = "PCA of Gene Expression in LCLs"
 color = indiv.fl
 par(mfrow = c(1,1),oma=c(0,0,2,0)) 
 for(i in 2:4) {
-  plot(sum.PC.l$rotation[,1], sum.PC.l$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum.l$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.l$importance[2,i]*100),"% of variance", sep=" "))
+  plot(sum.PC.l$rotation[,1], sum.PC.l$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.6,0.5), xlab=paste("PC 1 -", (sumsum.l$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum.l$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC.l$rotation[,1], sum.PC.l$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
 plot(sum.PC.l$rotation[,1], sum.PC.l$rotation[,2])
 
-sum.PC <- prcomp(na.omit(expr_nice_a))
-sumsum <- summary(sum.PC)
-title.PC = "PCA of Gene Expression of iPSCs and LCLs"
-par(mfrow = c(1,1), oma=c(0,0,2,0))
-color=indiv.fb
-for(i in 1:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i], cex=1.5, col=color, pch=20, main=title.PC, xlab= paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
-  text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=name.fb, cex = 0.8, pos=3)   
-}
-
-
-#Relationship between PCs and covariates for regressed data
-npcs = 4
-sum.PC <- prcomp(na.omit(abatch_stem), scale=TRUE)
-results<-c()
-for (f in covars.s) {
-  for (i in 1:npcs)
-  {
-    s = summary(lm(sum.PC$rotation[,i]~f));
-    results<-c(results,pf(s$fstatistic[[1]],
-                          s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-               s$adj.r.squared)
-  }
-}
-resultsM_gene_corrected <-matrix(nrow = length(covars), ncol = 2*npcs, data =
-                                   results, byrow = TRUE)
-rownames(resultsM_gene_corrected) = covars_names.s
-colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
-resultsM_gene_corrected
-PC_table_stem <- resultsM_gene_corrected
-
-#LCL
-npcs = 4
-sum.PC <- prcomp(na.omit(abatch_lcl), scale=TRUE)
-results<-c()
-for (f in covars.l) {
-  for (i in 1:npcs)
-  {
-    s = summary(lm(sum.PC$rotation[,i]~f));
-    results<-c(results,pf(s$fstatistic[[1]],
-                          s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
-               s$adj.r.squared)
-  }
-}
-resultsM_gene_corrected_lcl <-matrix(nrow = length(covars), ncol = 2*npcs, data =
-                                   results, byrow = TRUE)
-rownames(resultsM_gene_corrected_lcl) = covars_names.s
-colnames(resultsM_gene_corrected_lcl) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
-resultsM_gene_corrected_lcl
-PC_table_lcl <- resultsM_gene_corrected_lcl
-
-####################################################################################################################################################################
-
-### Within and across individual pearson correlation coefficient ###
-#iPSCs
-cor <- cor.stem
-
-#Within individual
-cor_2s <- c(cor[1,6],cor[1,12],cor[6,12])
-cor_5s <- c(cor[2,7],cor[2,13],cor[7,13])
-cor_6s <- c(cor[4,8],cor[8,14],cor[4,14]) 
-cor_9s <- c(cor[3,9],cor[3,15],cor[9,15]) 
-cor_10s <- c(cor[10,16])
-cor_14s <- c(cor[5,11],cor[5,17],cor[11,17])
-
-cor_within_s <- qpcR:::cbind.na(cor_2s,cor_5s,cor_6s,cor_9s,cor_10s,cor_14s)
-
-cor_wmeans_s <- apply(cor_within_s, 2, mean)
-
-#Across Individual
-cor_plus <- cbind(cor, indiv.fs)
-cor_plus <- rbind(cor_plus, indiv.fs)
-cor_plus
-
-#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
-cor_stem <- cor_plus
-cor_all_stem <- c()
-for (i in 1:(nrow(cor_stem)-1)) {
-  for (j in 1:(ncol(cor_stem)-1)) {
-    if(cor_stem[i,18]!= cor_stem[18,j]) {
-      if(j>i) {
-      cor_all_stem <- c(cor_all_stem, cor_stem[i,j])
-      }
-    }
-  }
-}
-cor_all_stem
-boxplot(cor_all_stem)
-
-#LCLs
-cor <- cor.lcl
-
-#Within Individuals
-cor_2l <- c(cor[1,6],cor[1,12],cor[6,12])
-cor_5l <- c(cor[2,7],cor[2,13],cor[7,13])
-cor_6l <- c(cor[3,8],cor[8,14],cor[3,14]) ## Remember lcls diff than stems
-cor_9l <- c(cor[4,9],cor[4,15],cor[9,15]) ## Remember lcls diff than stems
-cor_10l <- c(cor[10,16])
-cor_14l <- c(cor[5,11],cor[5,17],cor[11,17])
-
-cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
-
-cor_wmeans_l <- apply(cor_within_l, 2, mean)
-
-#Across Individuals
-cor_plus <- cbind(cor, indiv.fl)
-cor_plus <- rbind(cor_plus, indiv.fl)
-cor_plus
-
-#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
-cor_lcl <- cor_plus
-cor_all_lcl <- c()
-for (i in 1:(nrow(cor_lcl)-1)) {
-  for (j in 1:(ncol(cor_lcl)-1)) {
-    if(cor_lcl[i,18]!= cor_lcl[18,j]) {
-      if(j>i) {
-      cor_all_lcl <- c(cor_all_lcl, cor_lcl[i,j])
-      }
-    }
-  }
-}
-cor_all_lcl
-boxplot(cor_all_lcl)
-
+# sum.PC <- prcomp(na.omit(expr_nice_a))
+# sumsum <- summary(sum.PC)
+# title.PC = "PCA of Gene Expression of iPSCs and LCLs"
+# par(mfrow = c(1,1), oma=c(0,0,2,0))
+# color=indiv.fb
+# for(i in 1:4) {
+#   plot(sum.PC$rotation[,1], sum.PC$rotation[,i], cex=1.5, col=color, pch=20, main=title.PC, xlab= paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
+#   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=name.fb, cex = 0.8, pos=3)   
+# }
+# 
+# 
+# #Relationship between PCs and covariates for regressed data
+# npcs = 4
+# sum.PC <- sum.PC.s
+# results<-c()
+# for (f in covars.s) {
+#   for (i in 1:npcs)
+#   {
+#     s = summary(lm(sum.PC$rotation[,i]~f));
+#     results<-c(results,pf(s$fstatistic[[1]],
+#                           s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
+#                s$adj.r.squared)
+#   }
+# }
+# resultsM_gene_corrected <-matrix(nrow = length(covars.s), ncol = 2*npcs, data =
+#                                    results, byrow = TRUE)
+# rownames(resultsM_gene_corrected) = covars_names.s
+# colnames(resultsM_gene_corrected) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
+# resultsM_gene_corrected
+# PC_table_stem <- resultsM_gene_corrected
+# 
+# #LCL
+# npcs = 4
+# sum.PC <- sum.PC.l
+# results<-c()
+# for (f in covars.l) {
+#   for (i in 1:npcs)
+#   {
+#     s = summary(lm(sum.PC$rotation[,i]~f));
+#     results<-c(results,pf(s$fstatistic[[1]],
+#                           s$fstatistic[[2]],s$fstatistic[[3]], lower.tail = FALSE),
+#                s$adj.r.squared)
+#   }
+# }
+# resultsM_gene_corrected_lcl <-matrix(nrow = length(covars.l), ncol = 2*npcs, data =
+#                                    results, byrow = TRUE)
+# rownames(resultsM_gene_corrected_lcl) = covars_names.l
+# colnames(resultsM_gene_corrected_lcl) = c("PC1 p value","PC1 R2","PC2 p value","PC2 R2","PC3 p value","PC3 R2","PC4 p value","PC4 R2")
+# resultsM_gene_corrected_lcl
+# PC_table_lcl <- resultsM_gene_corrected_lcl
 
 
 ####################################################################################################################################################################
@@ -507,14 +461,15 @@ boxplot(cor_all_lcl)
 PC12 <- cbind(sum.PC.s$rotation[,1], sum.PC.s$rotation[,2])
 
 # Within Individual
-dist12_ind <- c()
+# dist12_ind <- c()
 # ind1 <- PC12[c(1,6,12),]
 # ind2 <- PC12[c(2,7,13),]
 # ind3 <- PC12[c(4,8,14),]
 # ind4 <- PC12[c(3,9,15),]
 # ind5 <- PC12[c(10,16),]
 # ind6 <- PC12[c(5,11,17),]
-
+# 
+#Removed outlier: 4-2
 ind1 <- PC12[c(1,6,11),]
 ind2 <- PC12[c(2,7,12),]
 ind3 <- PC12[c(4,8,13),]
@@ -561,7 +516,7 @@ mean_dist_all_stem <- mean(dist_all_stem)
 PC12_L <- cbind(sum.PC.l$rotation[,1], sum.PC.l$rotation[,2])
 
 #Dist by individual
-dist12_ind <- c()
+# dist12_ind <- c()
 # ind1 <- PC12[c(1,6,12),]
 # ind2 <- PC12[c(2,7,13),]
 # ind3 <- PC12[c(3,8,14),]
@@ -569,6 +524,7 @@ dist12_ind <- c()
 # ind5 <- PC12[c(10,16),]
 # ind6 <- PC12[c(5,11,17),]
 
+#Removed outlier: 4-2
 ind1 <- PC12_L[c(1,6,11),]
 ind2 <- PC12_L[c(2,7,12),]
 ind3 <- PC12_L[c(3,8,13),]
@@ -676,6 +632,79 @@ result <- decideTests(fit2)
 result
 
 ####################################################################################################################################################################
+
+### Within and across individual pearson correlation coefficient ###
+#iPSCs
+cor <- cor.stem
+
+#Within individual
+cor_2s <- c(cor[1,6],cor[1,11],cor[6,11])
+cor_5s <- c(cor[2,7],cor[2,12],cor[7,12])
+cor_6s <- c(cor[4,8],cor[8,13],cor[4,13]) 
+cor_9s <- c(cor[3,14]) 
+cor_10s <- c(cor[9,15])
+cor_14s <- c(cor[5,10],cor[5,16],cor[11,16])
+
+cor_within_s <- qpcR:::cbind.na(cor_2s,cor_5s,cor_6s,cor_9s,cor_10s,cor_14s)
+
+cor_wmeans_s <- apply(cor_within_s, 2, mean)
+
+#Across Individual
+cor_plus <- cbind(cor, indiv.fs)
+cor_plus <- rbind(cor_plus, indiv.fs)
+cor_plus
+
+#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
+cor_stem <- cor_plus
+cor_all_stem <- c()
+for (i in 1:(nrow(cor_stem)-1)) {
+  for (j in 1:(ncol(cor_stem)-1)) {
+    if(cor_stem[i,17]!= cor_stem[17,j]) {
+      if(j>i) {
+        cor_all_stem <- c(cor_all_stem, cor_stem[i,j])
+      }
+    }
+  }
+}
+cor_all_stem
+boxplot(cor_all_stem)
+
+#LCLs
+cor <- cor.lcl
+
+#Within Individuals
+cor_2l <- c(cor[1,6],cor[1,11],cor[6,11])
+cor_5l <- c(cor[2,7],cor[2,12],cor[7,12])
+cor_6l <- c(cor[3,8],cor[8,13],cor[3,13]) ## Remember lcls diff than stems
+cor_9l <- c(cor[4,14]) ## Remember lcls diff than stems
+cor_10l <- c(cor[9,15])
+cor_14l <- c(cor[5,10],cor[5,16],cor[11,16])
+
+cor_within_l <- qpcR:::cbind.na(cor_2l,cor_5l,cor_6l,cor_9l,cor_10l,cor_14l)
+
+cor_wmeans_l <- apply(cor_within_l, 2, mean)
+
+#Across Individuals
+cor_plus <- cbind(cor, indiv.fl)
+cor_plus <- rbind(cor_plus, indiv.fl)
+cor_plus
+
+#Function to pull out pairwise correlation values for samples not from the same individual, only from top half of matrix  (no duplicates)
+cor_lcl <- cor_plus
+cor_all_lcl <- c()
+for (i in 1:(nrow(cor_lcl)-1)) {
+  for (j in 1:(ncol(cor_lcl)-1)) {
+    if(cor_lcl[i,17]!= cor_lcl[17,j]) {
+      if(j>i) {
+        cor_all_lcl <- c(cor_all_lcl, cor_lcl[i,j])
+      }
+    }
+  }
+}
+cor_all_lcl
+boxplot(cor_all_lcl)
+
+
 #Correlations: mean for each individual and for all samples of all individuals
 cor_wmeanl <- apply(cor_within_l,2, mean, na.rm=TRUE)
 cor_wmeans <- apply(cor_within_s,2, mean, na.rm=TRUE)
@@ -688,11 +717,11 @@ boxplot(cor_bmeans, main="Within Individual Pearson correlation coefficients for
 
 cor_total <- cbind(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
 cor_total_vec <- c(cor_wmeans, cor_wmeanl, cor_all_stem, cor_all_lcl)
-cor_within_l.long <- c(as.vector(cor_within_l), rep(NA, length(cor_all_lcl)-length(cor_within_l)))
-cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-length(cor_within_s)))
-cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
+#cor_within_l.long <- c(as.vector(cor_within_l), rep(NA, length(cor_all_lcl)-length(cor_within_l)))
+#cor_within_s.long <- c(as.vector(cor_within_s), rep(NA, length(cor_all_stem)-length(cor_within_s)))
+#cor_tots <- cbind(cor_within_l.long, cor_within_s.long, cor_all_lcl, cor_all_stem)
 
-boxplot(cor_tots) #between all samples
+#boxplot(cor_tots) #between all samples
 boxplot(cor_total) #mean for each individual
 
 t_cor_w <- t.test(as.vector(cor_within_s), as.vector(cor_within_l)) #use all data points. this is also what is in paper boxplot (supplement)
@@ -705,14 +734,7 @@ pv_wm <- signif(t_cor_wmean$p.value, 1)
 t_cor_b <- t.test(cor_all_lcl, cor_all_stem)
 pv_b <- signif(t_cor_b$p.value, 1)
 
-#Make nice boxplots
-type <- c(rep("stem", times=length(cor_wmeans)), rep("lcl", times=length(cor_wmeanl)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
-group <- c(rep(as.factor("Within Individuals"), times=(length(cor_wmeans)+length(cor_wmeanl))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
-groupn <- c(rep("1", times=(length(cor_wmeans)+length(cor_wmeanl))), rep("2", times=length(cor_all_stem)+length(cor_all_lcl)))
-cor_df <- data.frame(cor_total_vec, type, group, groupn)
-ggplot(cor_df, aes(x=groupn, y=cor_total_vec)) + geom_boxplot(aes(fill=type), xlab=FALSE) + theme(text = element_text(size=18)) + annotate(geom = "text", label=paste("**p =", pv_w), x=1, y=0.98) + annotate(geom = "text", label=paste("**p =", pv_b), x=2, y=.97) + scale_x_discrete(labels=c("Within Individuals", "Between Individuals")) + theme(axis.title.x=element_blank(), panel.background=element_rect(fill='white')) + ylab("Pearson Correlation") + theme(axis.title.y = element_text(size=12, vjust=2.0), legend.title=element_blank()) #stat_boxplot(geom ='errorbar', aes(x=group))  
-
-
+#Make nice boxplot
 cor_total_vec <- c(cor_within_s, cor_within_l, cor_all_stem, cor_all_lcl)
 type <- c(rep("stem", times=length(cor_within_s)), rep("lcl", times=length(cor_within_l)), rep("stem", times=length(cor_all_stem)), rep("lcl", times=length(cor_all_lcl)))
 group <- c(rep(as.factor("Within Individuals"), times=(length(cor_within_s)+length(cor_within_l))), rep(as.factor("Between Individuals"), times=(length(cor_all_stem)+length(cor_all_lcl))))
@@ -801,12 +823,12 @@ abatch_all_highCVLS <- abatch_all[rownames(abatch_all) %in% high_CVLS,]
 ## Variance within vs among indvls
 expr_LCL <- abatch_lcl
 
-var_1 <- apply(expr_LCL[,c(1,6,12)],1,var)
-var_2 <- apply(expr_LCL[,c(2,7,13)],1,var)
-var_3 <- apply(expr_LCL[,c(3,8,14)],1,var)
-var_4 <- apply(expr_LCL[,c(4,9,15)],1,var)
-var_5 <- apply(expr_LCL[,c(10,16)],1,var)
-var_6 <- apply(expr_LCL[,c(5,11,17)],1,var)
+var_1 <- apply(expr_LCL[,c(1,6,11)],1,var)
+var_2 <- apply(expr_LCL[,c(2,7,12)],1,var)
+var_3 <- apply(expr_LCL[,c(3,8,13)],1,var)
+var_4 <- apply(expr_LCL[,c(4,14)],1,var)
+var_5 <- apply(expr_LCL[,c(9,15)],1,var)
+var_6 <- apply(expr_LCL[,c(5,10,16)],1,var)
 
 var_win_lcl <- cbind(var_1,var_2,var_3,var_4,var_5,var_6)
 var_lcl <- apply(expr_LCL,1,var) #calculate variance for each gene across all individuals
@@ -822,12 +844,12 @@ length(var_ratio_lcl)
 #Do same for stem cells REMEMBER 9 AND 6 ARE SWITCHED SO THESE LABELS AREN'T THE SAME AS LCLS
 expr_stem <- abatch_stem 
 
-var_1s <- apply(expr_stem[,c(1,6,12)],1,var)
-var_2s <- apply(expr_stem[,c(2,7,13)],1,var)
-var_3s <- apply(expr_stem[,c(4,8,14)],1,var)
-var_4s <- apply(expr_stem[,c(3,9,15)],1,var)
-var_5s <- apply(expr_stem[,c(10,16)],1,var)
-var_6s <- apply(expr_stem[,c(5,11,17)],1,var)
+var_1s <- apply(expr_stem[,c(1,6,11)],1,var)
+var_2s <- apply(expr_stem[,c(2,7,12)],1,var)
+var_3s <- apply(expr_stem[,c(4,8,13)],1,var)
+var_4s <- apply(expr_stem[,c(3,14)],1,var)
+var_5s <- apply(expr_stem[,c(9,15)],1,var)
+var_6s <- apply(expr_stem[,c(5,10,16)],1,var)
 
 var_win_stem <- cbind(var_1s,var_2s,var_3s,var_4s,var_5s,var_6s)
 var_stem <- apply(expr_stem,1,var) #calculate variance for each gene across all individuals
@@ -873,12 +895,12 @@ rorderedl<- lcl_list[order(lcl_list[,1], decreasing=TRUE),]
 #Plot expression by individual for most highly variable genes
 
 stem_bind <- data.frame(expr_stem, var_ratio_stem)
-ordered_stem_bind <- stem_bind[order(stem_bind[,18], decreasing=TRUE),]
-stem_ordered <- ordered_stem_bind[,-18]
+ordered_stem_bind <- stem_bind[order(stem_bind[,17], decreasing=TRUE),]
+stem_ordered <- ordered_stem_bind[,-17]
 
 lcl_bind <- data.frame(expr_LCL, var_ratio_lcl)
-ordered_lcl_bind <- lcl_bind[order(lcl_bind[,18], decreasing=TRUE),]
-lcl_ordered <- ordered_lcl_bind[,-18]
+ordered_lcl_bind <- lcl_bind[order(lcl_bind[,17], decreasing=TRUE),]
+lcl_ordered <- ordered_lcl_bind[,-17]
 
 for(i in 1:2) {
   #plot(c(1:17), ordered_stem_bind[i,-18], col=color, cex=2, pch=20, main=rownames(stem_bind[i,]), xlab=paste("Individual"), ylab=paste("Relative Gene Expression")) 
@@ -998,9 +1020,9 @@ lcls_lcls <- orderedl[rownames(orderedl) %in% eQTL_lcls,]
 dim(lcls_lcls)
 
 elcl_stemvar <- var_stem[names(var_stem) %in% eQTL_lcls]
-cv_elcl_stem <- CV_S[names(CV_S) %in% eQTL_lcls]
-
 elcl_lclvar <- var_lcl[names(var_lcl) %in% eQTL_lcls]
+
+cv_elcl_stem <- CV_S[names(CV_S) %in% eQTL_lcls]
 cv_elcl_lcl <- CV_L[names(CV_L) %in% eQTL_lcls]
 
 cv_nelcl_stem <- CV_S[!(names(CV_S) %in% eQTL_lcls)]
@@ -1015,7 +1037,7 @@ elcl_stem_mean <- apply(elcl_stem_expr, 1, mean)
 names_elcl_means <-  c("lcl mean eQTL genes", "ipsc mean eQTL genes")
 elcl_means <- data.frame(c(elcl_lcl_mean, elcl_stem_mean), names_elcl_means)
 boxplot(elcl_lcl_mean, elcl_stem_mean, names=c("lcl", "stem"), main="expression in genes with lcl eqtls")
-t.test(elcl_lcl_mean, elcl_stem_mean) #see below, it is significant when you don't take the average for each gene
+t.test(elcl_lcl_mean, elcl_stem_mean) #see below, it is significant when you don't take the average for each gene, but that's ok becaues you just care about the variance
 
 t.test(cv_elcl_stem, cv_elcl_lcl)
 ################################################################################################################
@@ -1120,39 +1142,40 @@ plot(log(CV_S), mean_S)
 ####################################################################################################################################################################
 
 ####################################################################################################################################################################
-# plot genes variable in stem cells, not LCLs
-stem_only <- bottom_stem[!(rownames(bottom_stem) %in% rownames(bottom_lcl)),]
-stem_only_exprs <- stem_ordered[rownames(stem_only),]
-dim(stem_only_exprs)  
-stem_subset <- rownames(stem_only_exprs)[1:10]
-
-stem_only_exprs_l <- expr_LCL[stem_subset,]
-
-for(i in 1:2) {
-  #plot(c(1:17), ordered_stem_bind[i,-18], col=color, cex=2, pch=20, main=rownames(stem_bind[i,]), xlab=paste("Individual"), ylab=paste("Relative Gene Expression")) 
-  vectori <-  unlist(stem_only_exprs[i,])
-  boxplot(vectori~indiv.fs, stem_only_exprs, names=(c("ind 1", "ind 2", "ind 3", "ind 4", "ind 5", "ind 6", "")), ylab="Gene Expression", main= rownames(stem_only_exprs[i,]))
-}
-
-for(i in 1:2) {
-  #plot(c(1:17), ordered_stem_bind[i,-18], col=color, cex=2, pch=20, main=rownames(stem_bind[i,]), xlab=paste("Individual"), ylab=paste("Relative Gene Expression")) 
-  vectori <-  unlist(stem_only_exprs_l[i,])
-  boxplot(vectori~indiv.fl, stem_only_exprs_l, names=(c("ind 1", "ind 2", "ind 3", "ind 4", "ind 5", "ind 6", "")), ylab="Gene Expression", main= rownames(stem_only_exprs_l[i,]))
-}
+# # plot genes variable in stem cells, not LCLs
+# stem_only <- bottom_stem[!(rownames(bottom_stem) %in% rownames(bottom_lcl)),]
+# stem_only_exprs <- stem_ordered[rownames(stem_only),]
+# dim(stem_only_exprs)  
+# stem_subset <- rownames(stem_only_exprs)[1:10]
+# 
+# stem_only_exprs_l <- expr_LCL[stem_subset,]
+# 
+# for(i in 1:2) {
+#   #plot(c(1:17), ordered_stem_bind[i,-18], col=color, cex=2, pch=20, main=rownames(stem_bind[i,]), xlab=paste("Individual"), ylab=paste("Relative Gene Expression")) 
+#   vectori <-  unlist(stem_only_exprs[i,])
+#   boxplot(vectori~indiv.fs, stem_only_exprs, names=(c("ind 1", "ind 2", "ind 3", "ind 4", "ind 5", "ind 6", "")), ylab="Gene Expression", main= rownames(stem_only_exprs[i,]))
+# }
+# 
+# for(i in 1:2) {
+#   #plot(c(1:17), ordered_stem_bind[i,-18], col=color, cex=2, pch=20, main=rownames(stem_bind[i,]), xlab=paste("Individual"), ylab=paste("Relative Gene Expression")) 
+#   vectori <-  unlist(stem_only_exprs_l[i,])
+#   boxplot(vectori~indiv.fl, stem_only_exprs_l, names=(c("ind 1", "ind 2", "ind 3", "ind 4", "ind 5", "ind 6", "")), ylab="Gene Expression", main= rownames(stem_only_exprs_l[i,]))
+# }
 ####################################################################################################################################################################
 
 ####################################################################################################################################################################
 #Supp table 1
 
-for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_lcls) 
+# Always remake s1
+# for_s1 <- data.frame(abatch_all, pv_list_raw, pv_list_adj, adjust_stems, adjust_lcls) 
 
-write.table(for_s1, "C:/Users/a a/Documents/Lab/Variation Recovery/s1.txt", sep="\t",quote=F) # you'll need to adjust column names
+# write.table(for_s1, "C:/Users/a a/Documents/Lab/Variation Recovery/s1.txt", sep="\t",quote=F) # you'll need to adjust column names
 # the x's in column name are because R had to change characters it didn't like.
 #is cv related to association with individual?
 
 
 ####################################################################################################################################################################
-#Paper values
+# Compile Paper values
 
 t.test(abatch_lcl, abatch_stem)
 telcl_lcl <- t.test(cv_elcl_lcl, cv_nelcl_lcl)
@@ -1196,23 +1219,23 @@ PC_table_lcl
 PC_table_stem
 
 #########################################################################################################################################
-#Paper Plots
+#Compile Paper Plots
 
 #Histograms of adjusted p-values
 hist(adjust_stems)
 hist(adjust_lcls)
 
 #Variance: iPSCs and LCLs
-leg_pos <- c(.49, .55)
-ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.045, y=50) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(panel.border = element_rect(color="black", fill=NA), axis.line.y=element_line(color="black"), axis.text=element_text(face="bold", size=18), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'), axis.title=element_text(size=18),axis.title.y=element_text(vjust=1.2), axis.title.x = element_text(vjust=-.35)) +theme(text = element_text(size=18), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
+leg_pos <- c(.62, .69)
+ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=.5) + annotate(geom = "text", label=paste("p-value = ", pv_var), x=.06, y=70) +geom_density(alpha=0.5) +xlim(-.01,.1)+xlab("Variance")  + theme(panel.border = element_rect(color="black", fill=NA), axis.line.y=element_line(color="black"), axis.text=element_text(face="plain", size=18), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'), axis.title=element_text(size=18, face="plain"),axis.title.y=element_text(vjust=1.2), axis.title.x = element_text(vjust=-.35)) +theme(text = element_text(size=18, face="bold"), legend.title=element_blank()) + scale_fill_manual(values=rev(cols), labels=c("iPSCs", "LCLs"))
 
 #Within to between individual variance: iPSCs and LCLs
-leg_pos <- c(.55, .55)
-ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.position=c(.75,.75), legend.title=element_blank(), axis.title=element_text(size=18), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18)) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=4.5, y=.75) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
+leg_pos <- c(.62, .69)
+ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.title=element_blank(), axis.title=element_text(size=18, face="plain"), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18, face="bold")) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=5, y=0.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
 
 #Variance in genes with eQTLs vs without
 leg_pos <- c(.07,.9)
-ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type)) +ylim(c(-11, -1.5))+labs(y="log(coefficient of variation)", x="") + theme(axis.title=element_text(size=18, face="plain"), legend.background=element_rect(fill="transparent"),panel.border=element_rect(color="black", fill=NA),legend.position = leg_pos, text = element_text(size=18, face="bold"), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
+ggplot(df_ncv, aes(type_var,cv_nlog2, fill=cell_type))+labs(y="log(coefficient of variation)", x="") + theme(axis.title=element_text(size=18, face="plain"), legend.background=element_rect(fill="transparent"),panel.border=element_rect(color="black", fill=NA),legend.position = leg_pos, text = element_text(size=18, face="bold"), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),axis.title.y = element_text(vjust=1.5), legend.title=element_blank(), panel.background=element_rect(fill='white'))+geom_boxplot(aes(fill=cell_type), position=dodge) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs")) #+ geom_errorbar(aes(ymin=cv_lcleQTLs-se, ymax=cv_lcleQTLs+se), width=0.2, position=dodge)
 
 #Black and white dendrograms
 ggplot(segment(d_stem)) + 
@@ -1248,7 +1271,7 @@ ggplot(segment(d_lcl)) +
 col.list <- c("green", "red", "purple", "blue", "black", "orange")
 palette(col.list)
 
-sum.PC <- prcomp(na.omit(expr_nice_s), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_s))
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -1260,11 +1283,11 @@ par(mfrow = c(1,1),oma=c(0,0,2,0))
 plot(c(1:ncol(abatch_stem)),sum.PC$rotation[,1],cex=2,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
 text(c(1:ncol(abatch_stem)),sum.PC$rotation[,1], indiv.fs, cex = 1.25, pos=3)   
 for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.5,0.4), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
+  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.4), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fs, cex = 1.25, pos=3)   
 }  
 
-sum.PC <- prcomp(na.omit(expr_nice_l), scale=TRUE)
+sum.PC <- prcomp(na.omit(expr_nice_l))
 sumsum <- summary(sum.PC)
 op <- par(mfrow = c(3,3), ## split region
           oma = c(5,0,4,0) + 0.1, ## create outer margin
@@ -1276,7 +1299,7 @@ par(mfrow = c(1,1),oma=c(0,0,2,0))
 plot(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1],cex=1.5,col=color, xlab="Index of Samples",pch = 20, ylab=paste("PC 1 -",(sumsum$importance[2,1]*100),"% of variance",sep=" "),main=title.PC)
 text(c(1:ncol(abatch_lcl)),sum.PC$rotation[,1], indiv.fl, cex = 0.55, pos=3)   
 for(i in 2:4) {
-  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.4,0.6), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
+  plot(sum.PC$rotation[,1], sum.PC$rotation[,i],cex=2, col=color,pch=20,main=title.PC, cex.lab=1.5, cex.axis=1.2, ylim=c(-0.6,0.5), xlab=paste("PC 1 -", (sumsum$importance[2,1]*100),"% of variance", sep=" "), ylab=paste("PC",i,"-",(sumsum$importance[2,i]*100),"% of variance", sep=" "))
   text(sum.PC$rotation[,1], sum.PC$rotation[,i],labels=indiv.fl, cex = 1.25, pos=3)   
 }  
 
