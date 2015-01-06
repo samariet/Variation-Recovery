@@ -29,10 +29,10 @@ library(ggdendro)
 setwd("~/Lab/Variation Recovery")
 
 ##Create object with name of data file:
-data = c('YGilad-ST-May18-14-ProbeLevelData-NotNormalized-NoBGSubtracted-FinalReport.txt')
+datas = c('YGilad-ST-May18-14-ProbeLevelData-NotNormalized-NoBGSubtracted-FinalReport.txt')
 
 ##Extract raw data from lumi file and preparing for removing bad probes. Mapping arguments are Null because Probe list is annotaed:
-data.lumi = lumiR.batch(data, lib.mapping=NULL, convertNuID=F,annotationColumn=c('ACCESSION', 'SYMBOL', 'PROBE_SEQUENCE', 'PROBE_START', 'CHROMOSOME', 'PROBE_CHR_ORIENTATION', 'PROBE_COORDINATES', 'DEFINITION','PROBE_ID'))
+data.lumi = lumiR.batch(datas, lib.mapping=NULL, convertNuID=F,annotationColumn=c('ACCESSION', 'SYMBOL', 'PROBE_SEQUENCE', 'PROBE_START', 'CHROMOSOME', 'PROBE_CHR_ORIENTATION', 'PROBE_COORDINATES', 'DEFINITION','PROBE_ID'))
 
 plot(data.lumi, what='boxplot')
 plot(data.lumi, what='density')
@@ -598,8 +598,6 @@ colnames(Edist) <- c("iPSCs", "LCLs")
 Edist_t <- t(Edist)
 Edist_t
 
-
-
 ####################################################################################################################################################################
 #Differential expression with limma
 
@@ -616,6 +614,7 @@ fit2<-contrasts.fit(fit,contrast.matrix)
 fit2<-eBayes(fit2)
 
 pv_list <- fit2$p.value
+
 output_all <- topTable(fit2, number=20000, sort.by="none")
 dim(output_all)
 pv_list_raw <- output_all[,4, drop=FALSE]
@@ -638,6 +637,7 @@ result
 cor <- cor.stem
 
 #Within individual
+#cor[grep("1", indiv.fs),grep("1", indiv.fs) ]
 cor_2s <- c(cor[1,6],cor[1,11],cor[6,11])
 cor_5s <- c(cor[2,7],cor[2,12],cor[7,12])
 cor_6s <- c(cor[4,8],cor[8,13],cor[4,13]) 
@@ -756,6 +756,7 @@ mean_L <- apply(abatch_lcl, 1, mean)
 
 ## Calculate CV between individuals (don't want to confound analysis with cvs within individual)##
 
+
 # Pick a random line from each individual
 df_astem <- data.frame(rbind(abatch_stem, ID.fs))
 df_s1 <- df_astem[,(indiv.fs==1)]
@@ -768,6 +769,8 @@ df_s6 <- df_astem[,(indiv.fs==6)]
 
 
 df_alcl <- data.frame(rbind(abatch_lcl, ID.fl))
+
+set.seed(1234)
 
 random_stem <- cbind(sample(df_s1,1),sample(df_s2,1), sample(df_s3,1), sample(df_s4,1),sample(df_s5,1),sample(df_s6,1))
 length(random_stem)
@@ -1139,6 +1142,9 @@ explained_avg <- c(exp_l, exp_s)
 ####################################################################################################################################################################
 # Expression and variance, there is a relationship.
 plot(log(CV_S), mean_S)
+plot(mean_S, CV_S)
+cor.test(mean_S, CV_S)
+
 ####################################################################################################################################################################
 
 ####################################################################################################################################################################
@@ -1231,7 +1237,7 @@ ggplot(var_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=.5) + annotate(
 
 #Within to between individual variance: iPSCs and LCLs
 leg_pos <- c(.62, .69)
-ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.title=element_blank(), axis.title=element_text(size=18, face="plain"), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18, face="bold")) +annotate(geom = "text", label=paste("p-value = ", pv_var_rat), x=5, y=0.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
+ggplot(var_rat_all, aes(x=var, fill=Cell_type)) + geom_density(alpha=0.5) +xlim(-.25,8.0)+xlab("Variance Between/Variance Within") + geom_vline(xintercept=cutoff_avg, linetype="dotted") + theme(panel.border=element_rect(color="black", fill=NA), panel.grid.major = element_blank(), panel.grid.minor= element_blank(),legend.position=leg_pos, panel.background=element_rect(fill='white'),legend.title=element_blank(), axis.title=element_text(size=18, face="plain"), panel.background=element_rect(fill='white')) + theme(text = element_text(size=18, face="bold")) +annotate(geom = "text", label=paste("p-value < 2.2 e-16 "), x=5.1, y=0.9) + scale_fill_manual(values=cols, labels=c("LCLs", "iPSCs"))
 
 #Variance in genes with eQTLs vs without
 leg_pos <- c(.07,.9)
